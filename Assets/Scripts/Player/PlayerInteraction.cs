@@ -62,7 +62,17 @@ namespace MazeRunner.Player
         public void OnInteract(InputAction.CallbackContext context)
         {
             if (!context.started) return;
+            DoInteract();
+        }
 
+        public void OnInteract(InputValue value)
+        {
+            if (value.isPressed)
+                DoInteract();
+        }
+
+        private void DoInteract()
+        {
             if (currentTarget != null && currentTarget.CanInteract(this))
             {
                 currentTarget.Interact(this);

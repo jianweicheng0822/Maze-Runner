@@ -119,7 +119,7 @@ namespace MazeRunner.Player
                 out _, groundCheckDistance + groundCheckRadius, groundLayer);
         }
 
-        // Input System callbacks
+        // Input System callbacks (CallbackContext - for PlayerInput "Invoke Unity Events" mode)
         public void OnMove(InputAction.CallbackContext context)
         {
             moveInput = context.ReadValue<Vector2>();
@@ -131,6 +131,18 @@ namespace MazeRunner.Player
                 jumpRequested = true;
         }
 
+        // SendMessages / BroadcastMessages overloads (for PlayerInput "Send Messages" mode)
+        public void OnMove(InputValue value)
+        {
+            moveInput = value.Get<Vector2>();
+        }
+
+        public void OnJump(InputValue value)
+        {
+            if (value.isPressed && isGrounded)
+                jumpRequested = true;
+        }
+
         public void ApplyKnockback(Vector3 force)
         {
             rb.AddForce(force, ForceMode.Impulse);
@@ -139,6 +151,24 @@ namespace MazeRunner.Player
         public void SetCameraTransform(Transform cam)
         {
             cameraTransform = cam;
+        }
+
+        // Forward look input to camera (SendMessages only sends to this GameObject)
+        private ThirdPersonCamera thirdPersonCamera;
+
+        public void OnLook(InputAction.CallbackContext context)
+        {
+            if (thirdPersonCamera == null)
+                thirdPersonCamera = FindFirstObjectByType<ThirdPersonCamera>();
+            thirdPersonCamera?.OnLook(context);
+        }
+
+        public void OnLook(InputValue value)
+        {
+            if (thirdPersonCamera == null)
+                thirdPersonCamera = FindFirstObjectByType<ThirdPersonCamera>();
+            if (thirdPersonCamera != null)
+                thirdPersonCamera.OnLook(value);
         }
     }
 }

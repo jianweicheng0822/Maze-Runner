@@ -73,5 +73,10 @@ namespace MazeRunner.Player
         {
             lookInput = context.ReadValue<Vector2>();
         }
+
+        public void OnLook(InputValue value)
+        {
+            lookInput = value.Get<Vector2>();
+        }
     }
 }
