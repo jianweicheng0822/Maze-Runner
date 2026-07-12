@@ -8,7 +8,7 @@ namespace MazeRunner.Core
         [SerializeField] private GameObject visualIndicator; // portal/gate visual
         [SerializeField] private ParticleSystem activationEffect;
 
-        private readonly HashSet<int> arrivedPlayers = new HashSet<int>();
+        private readonly HashSet<GameObject> arrivedPlayers = new HashSet<GameObject>();
         private bool isActive;
         private int totalPlayerCount;
 
@@ -57,8 +57,7 @@ namespace MazeRunner.Core
             if (!isActive) return;
             if (!other.CompareTag(GameTags.Player)) return;
 
-            int playerId = other.gameObject.GetInstanceID();
-            if (arrivedPlayers.Add(playerId))
+            if (arrivedPlayers.Add(other.gameObject))
             {
                 OnPlayerArrived?.Invoke(arrivedPlayers.Count, totalPlayerCount);
 
@@ -75,8 +74,7 @@ namespace MazeRunner.Core
             if (!isActive) return;
             if (!other.CompareTag(GameTags.Player)) return;
 
-            int playerId = other.gameObject.GetInstanceID();
-            if (arrivedPlayers.Remove(playerId))
+            if (arrivedPlayers.Remove(other.gameObject))
             {
                 OnPlayerArrived?.Invoke(arrivedPlayers.Count, totalPlayerCount);
             }
