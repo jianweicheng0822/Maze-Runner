@@ -90,5 +90,10 @@ namespace MazeRunner.Core
         {
             if (musicSource != null) musicSource.volume = volume;
         }
+
+        public void SetSFXVolume(float volume)
+        {
+            // SFX volume stored for future use when SFX audio source is added
+        }
     }
 }

@@ -9,6 +9,7 @@ namespace MazeRunner.UI
     {
         [SerializeField] private GameObject settingsPanel;
         [SerializeField] private Slider musicVolumeSlider;
+        [SerializeField] private Slider sfxVolumeSlider;
         [SerializeField] private string gameSceneName = "TestScene";
 
         void Start()
@@ -23,6 +24,12 @@ namespace MazeRunner.UI
             {
                 musicVolumeSlider.value = 0.7f;
                 musicVolumeSlider.onValueChanged.AddListener(OnMusicVolumeChanged);
+            }
+
+            if (sfxVolumeSlider != null)
+            {
+                sfxVolumeSlider.value = 0.7f;
+                sfxVolumeSlider.onValueChanged.AddListener(OnSFXVolumeChanged);
             }
 
             if (AudioManager.Instance != null)
@@ -64,6 +71,12 @@ namespace MazeRunner.UI
         {
             if (AudioManager.Instance != null)
                 AudioManager.Instance.SetMusicVolume(value);
+        }
+
+        private void OnSFXVolumeChanged(float value)
+        {
+            if (AudioManager.Instance != null)
+                AudioManager.Instance.SetSFXVolume(value);
         }
     }
 }

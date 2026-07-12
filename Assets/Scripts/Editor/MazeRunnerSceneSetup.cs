@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine.InputSystem;
+using TMPro;
 using MazeRunner.Core;
 using MazeRunner.Player;
 using MazeRunner.Items;
@@ -13,7 +14,7 @@ using MazeRunner.UI;
 /// <summary>
 /// One-click test scene setup for Maze Runner.
 /// Menu: Maze Runner > Setup Test Scene
-/// Visual style: colorful toy/cartoon robot astronauts in a playful maze.
+/// Visual style: sci-fi space-themed "GALAXY RUNNERS" with neon cyan glow.
 /// </summary>
 public class MazeRunnerSceneSetup : EditorWindow
 {
@@ -34,6 +35,16 @@ public class MazeRunnerSceneSetup : EditorWindow
     static readonly Color DeliveryYellow = new Color(1f, 0.9f, 0.4f);
     static readonly Color DeliveryBlue = new Color(0.35f, 0.55f, 0.85f);
     static readonly Color ScreenGreen = new Color(0.3f, 1f, 0.4f);
+
+    // Menu color palette
+    static readonly Color NeonCyan = new Color(0.2f, 0.9f, 0.9f);
+    static readonly Color GoldTitle = new Color(0.9f, 0.72f, 0.25f);
+    static readonly Color MenuSkyTop = new Color(0.12f, 0.08f, 0.25f);
+    static readonly Color MenuGroundColor = new Color(0.85f, 0.6f, 0.35f);
+    static readonly Color ButtonTan = new Color(0.82f, 0.72f, 0.55f);
+    static readonly Color ButtonTextDark = new Color(0.2f, 0.15f, 0.1f);
+    static readonly Color MenuWallPink = new Color(0.9f, 0.35f, 0.55f);
+    static readonly Color MenuWallPurple = new Color(0.55f, 0.2f, 0.7f);
 
     [MenuItem("Maze Runner/Setup Test Scene (Full) %#t")]
     public static void SetupFullTestScene()
@@ -95,66 +106,150 @@ public class MazeRunnerSceneSetup : EditorWindow
         camObj.tag = "MainCamera";
         var cam = camObj.AddComponent<Camera>();
         cam.clearFlags = CameraClearFlags.SolidColor;
-        cam.backgroundColor = new Color(0.45f, 0.75f, 0.95f); // Soft sky blue
+        cam.backgroundColor = MenuSkyTop; // Dark purple-blue sky
         cam.fieldOfView = 50f;
-        camObj.transform.position = new Vector3(0f, 3f, -10f);
-        camObj.transform.rotation = Quaternion.Euler(10f, 0f, 0f);
+        camObj.transform.position = new Vector3(0f, 4f, -8f);
+        camObj.transform.rotation = Quaternion.Euler(12f, 0f, 0f);
         camObj.AddComponent<AudioListener>();
 
-        // --- Lighting ---
+        // --- Lighting (warm sunset feel) ---
         GameObject sunObj = new GameObject("Directional Light");
         var sun = sunObj.AddComponent<Light>();
         sun.type = LightType.Directional;
-        sun.color = new Color(1f, 0.96f, 0.88f);
-        sun.intensity = 1.5f;
-        sunObj.transform.rotation = Quaternion.Euler(45f, -30f, 0f);
+        sun.color = new Color(1f, 0.85f, 0.6f); // Warm orange sunlight
+        sun.intensity = 1.4f;
+        sunObj.transform.rotation = Quaternion.Euler(35f, -20f, 0f);
         sun.shadows = LightShadows.Soft;
-        RenderSettings.ambientIntensity = 1.2f;
+        RenderSettings.ambientIntensity = 1.1f;
 
         GameObject fillObj = new GameObject("Fill Light");
         var fill = fillObj.AddComponent<Light>();
         fill.type = LightType.Directional;
-        fill.color = new Color(0.7f, 0.85f, 1f);
+        fill.color = new Color(0.6f, 0.5f, 0.9f); // Purple fill
         fill.intensity = 0.5f;
-        fillObj.transform.rotation = Quaternion.Euler(30f, 150f, 0f);
+        fillObj.transform.rotation = Quaternion.Euler(30f, 160f, 0f);
         fill.shadows = LightShadows.None;
 
-        // --- Ground ---
+        // Ambient cyan-purple rim light from above
+        GameObject rimObj = new GameObject("Rim Light");
+        var rim = rimObj.AddComponent<Light>();
+        rim.type = LightType.Point;
+        rim.color = new Color(0.4f, 0.6f, 1f);
+        rim.intensity = 2.5f;
+        rim.range = 40f;
+        rimObj.transform.position = new Vector3(0f, 10f, 5f);
+
+        // --- Ground plane (warm sandy/orange) ---
         GameObject ground = GameObject.CreatePrimitive(PrimitiveType.Cube);
         ground.name = "Ground";
-        ground.transform.position = new Vector3(0f, -0.5f, 0f);
-        ground.transform.localScale = new Vector3(40f, 1f, 30f);
+        ground.transform.position = new Vector3(0f, -0.5f, 5f);
+        ground.transform.localScale = new Vector3(50f, 1f, 40f);
         ground.isStatic = true;
-        ground.GetComponent<Renderer>().material = CreateMat(FloorBeige, 0.3f);
+        ground.GetComponent<Renderer>().material = CreateMat(MenuGroundColor, 0.2f);
 
-        // --- Background walls (colorful toy walls behind the menu) ---
-        GameObject bgParent = new GameObject("Background Decorations");
+        // --- Background colorful walls (large, vibrant, close to camera) ---
+        GameObject bgParent = new GameObject("Background Walls");
 
-        CreateColorWall(bgParent.transform, new Vector3(-6f, 2f, 5f), new Vector3(2f, 4f, 0.8f), "Wall Blue", WallBlue);
-        CreateColorWall(bgParent.transform, new Vector3(-3f, 1.5f, 6f), new Vector3(1.5f, 3f, 0.8f), "Wall Yellow", WallYellow);
-        CreateColorWall(bgParent.transform, new Vector3(0f, 2.5f, 7f), new Vector3(2.5f, 5f, 0.8f), "Wall Red", WallRed);
-        CreateColorWall(bgParent.transform, new Vector3(4f, 1.8f, 5.5f), new Vector3(1.8f, 3.6f, 0.8f), "Wall Orange", WallOrange);
-        CreateColorWall(bgParent.transform, new Vector3(7f, 2.2f, 6.5f), new Vector3(2f, 4.4f, 0.8f), "Wall Blue 2", WallBlue);
+        // Far left - large blue block
+        CreateMenuWall(bgParent.transform, new Vector3(-8f, 2.5f, 6f), new Vector3(3f, 5f, 3f), WallBlue);
+        // Left-center - pink/magenta block
+        CreateMenuWall(bgParent.transform, new Vector3(-4.5f, 1.5f, 8f), new Vector3(2f, 3f, 2f), MenuWallPink);
+        // Center-left - purple block (tall)
+        CreateMenuWall(bgParent.transform, new Vector3(-2f, 2f, 10f), new Vector3(2.5f, 4f, 2.5f), MenuWallPurple);
+        // Center - large blue block behind buttons
+        CreateMenuWall(bgParent.transform, new Vector3(0f, 3f, 12f), new Vector3(4f, 6f, 3f), WallBlue);
+        // Center-right - orange block
+        CreateMenuWall(bgParent.transform, new Vector3(3f, 2f, 9f), new Vector3(2.5f, 4f, 2.5f), WallOrange);
+        // Right - red block
+        CreateMenuWall(bgParent.transform, new Vector3(5.5f, 2.5f, 7f), new Vector3(3f, 5f, 3f), WallRed);
+        // Far right - blue block
+        CreateMenuWall(bgParent.transform, new Vector3(8.5f, 2f, 8f), new Vector3(3f, 4f, 3f), WallBlue);
+        // Extra pink block far right
+        CreateMenuWall(bgParent.transform, new Vector3(7f, 1f, 5f), new Vector3(2f, 2f, 2f), MenuWallPink);
 
-        // Wall caps (LEGO studs)
-        CreateWallCap(bgParent.transform, new Vector3(-6f, 4.1f, 5f), WallBlue);
-        CreateWallCap(bgParent.transform, new Vector3(0f, 5.1f, 7f), WallRed);
-        CreateWallCap(bgParent.transform, new Vector3(7f, 4.5f, 6.5f), WallBlue);
+        // LEGO-style wall caps on some blocks
+        CreateWallCap(bgParent.transform, new Vector3(-8f, 5.1f, 6f), WallBlue);
+        CreateWallCap(bgParent.transform, new Vector3(-7f, 5.1f, 6f), WallBlue);
+        CreateWallCap(bgParent.transform, new Vector3(0f, 6.1f, 12f), WallBlue);
+        CreateWallCap(bgParent.transform, new Vector3(1f, 6.1f, 12f), WallBlue);
+        CreateWallCap(bgParent.transform, new Vector3(5.5f, 5.1f, 7f), WallRed);
+        CreateWallCap(bgParent.transform, new Vector3(6.5f, 5.1f, 7f), WallRed);
 
-        // --- Floating decorations (items that bob and rotate) ---
-        GameObject floatParent = new GameObject("Floating Decorations");
+        // --- Neon maze grid pattern in sky (using emissive thin cubes) ---
+        GameObject mazeGrid = new GameObject("Neon Maze Grid");
+        mazeGrid.transform.position = new Vector3(0f, 9f, 18f);
 
-        CreateFloatingDecor(floatParent.transform, new Vector3(-5f, 4f, 3f), ItemPurpleGlow, PrimitiveType.Cube, 0.6f);
-        CreateFloatingDecor(floatParent.transform, new Vector3(5.5f, 5f, 4f), ItemCyan, PrimitiveType.Sphere, 0.5f);
-        CreateFloatingDecor(floatParent.transform, new Vector3(-2f, 5.5f, 5f), new Color(1f, 0.75f, 0.15f), PrimitiveType.Cube, 0.45f);
-        CreateFloatingDecor(floatParent.transform, new Vector3(3f, 3.5f, 2f), ItemPurpleGlow, PrimitiveType.Sphere, 0.4f);
-        CreateFloatingDecor(floatParent.transform, new Vector3(8f, 4.5f, 5f), WallYellow, PrimitiveType.Cube, 0.5f);
-        CreateFloatingDecor(floatParent.transform, new Vector3(-8f, 3.5f, 4f), PlayerGreen, PrimitiveType.Sphere, 0.35f);
+        Color mazeLineColor = new Color(0.3f, 0.7f, 0.8f);
+        // Horizontal lines
+        CreateNeonLine(mazeGrid.transform, new Vector3(0f, 0f, 0f), new Vector3(12f, 0.08f, 0.08f), mazeLineColor);
+        CreateNeonLine(mazeGrid.transform, new Vector3(0f, 1.5f, 0f), new Vector3(10f, 0.08f, 0.08f), mazeLineColor);
+        CreateNeonLine(mazeGrid.transform, new Vector3(0f, 3f, 0f), new Vector3(12f, 0.08f, 0.08f), mazeLineColor);
+        CreateNeonLine(mazeGrid.transform, new Vector3(0f, -1.5f, 0f), new Vector3(10f, 0.08f, 0.08f), mazeLineColor);
+        // Vertical lines
+        CreateNeonLine(mazeGrid.transform, new Vector3(-4f, 1.5f, 0f), new Vector3(0.08f, 6f, 0.08f), mazeLineColor);
+        CreateNeonLine(mazeGrid.transform, new Vector3(-2f, 0.75f, 0f), new Vector3(0.08f, 3f, 0.08f), mazeLineColor);
+        CreateNeonLine(mazeGrid.transform, new Vector3(0f, 1.5f, 0f), new Vector3(0.08f, 6f, 0.08f), mazeLineColor);
+        CreateNeonLine(mazeGrid.transform, new Vector3(2f, 0.75f, 0f), new Vector3(0.08f, 3f, 0.08f), mazeLineColor);
+        CreateNeonLine(mazeGrid.transform, new Vector3(4f, 1.5f, 0f), new Vector3(0.08f, 6f, 0.08f), mazeLineColor);
+        // Extra maze segments
+        CreateNeonLine(mazeGrid.transform, new Vector3(-3f, 2.25f, 0f), new Vector3(2f, 0.08f, 0.08f), mazeLineColor);
+        CreateNeonLine(mazeGrid.transform, new Vector3(3f, 0.75f, 0f), new Vector3(2f, 0.08f, 0.08f), mazeLineColor);
+        CreateNeonLine(mazeGrid.transform, new Vector3(-1f, -0.75f, 0f), new Vector3(2f, 0.08f, 0.08f), mazeLineColor);
+        CreateNeonLine(mazeGrid.transform, new Vector3(1f, 2.25f, 0f), new Vector3(2f, 0.08f, 0.08f), mazeLineColor);
 
-        // --- Mini robot character on the ground (static decoration) ---
-        CreateMenuRobot(bgParent.transform, new Vector3(-4f, 0f, 2f), PlayerOrange, 0.7f);
-        CreateMenuRobot(bgParent.transform, new Vector3(5f, 0f, 3f), PlayerCyan, 0.7f);
-        CreateMenuRobot(bgParent.transform, new Vector3(1f, 0f, 4f), PlayerPurple, 0.6f);
+        // --- Astronaut characters (large, on ground, visible) ---
+        // Left astronaut - orange, facing camera
+        CreateMenuRobot(bgParent.transform, new Vector3(-6.5f, 0f, 2f), PlayerOrange, 1.8f);
+        // Right astronaut - purple, facing camera
+        CreateMenuRobot(bgParent.transform, new Vector3(7f, 0f, 2.5f), PlayerPurple, 1.8f);
+
+        // --- Ground objects (sci-fi props scattered around) ---
+        GameObject propsParent = new GameObject("Ground Props");
+
+        // Cannon barrel (dark cylinder) - left side
+        GameObject cannon = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        cannon.name = "Cannon";
+        cannon.transform.SetParent(propsParent.transform);
+        cannon.transform.position = new Vector3(-3.5f, 0.5f, 3f);
+        cannon.transform.localScale = new Vector3(0.8f, 1.2f, 0.8f);
+        cannon.transform.rotation = Quaternion.Euler(0f, 0f, 70f);
+        Object.DestroyImmediate(cannon.GetComponent<Collider>());
+        cannon.GetComponent<Renderer>().material = CreateMat(new Color(0.15f, 0.15f, 0.18f), 0.7f);
+
+        // Cannon base
+        GameObject cannonBase = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        cannonBase.name = "Cannon Base";
+        cannonBase.transform.SetParent(propsParent.transform);
+        cannonBase.transform.position = new Vector3(-4f, 0.3f, 3f);
+        cannonBase.transform.localScale = new Vector3(0.6f, 0.6f, 0.6f);
+        Object.DestroyImmediate(cannonBase.GetComponent<Collider>());
+        cannonBase.GetComponent<Renderer>().material = CreateMat(new Color(0.2f, 0.2f, 0.22f), 0.6f);
+
+        // Cyan battery cylinders - left side
+        CreateGroundProp(propsParent.transform, new Vector3(-5f, 0.3f, 3.5f), new Vector3(0.3f, 0.6f, 0.3f), NeonCyan, PrimitiveType.Cylinder);
+        CreateGroundProp(propsParent.transform, new Vector3(-4.6f, 0.3f, 4f), new Vector3(0.25f, 0.6f, 0.25f), NeonCyan, PrimitiveType.Cylinder);
+        CreateGroundProp(propsParent.transform, new Vector3(-5.3f, 0.2f, 4.2f), new Vector3(0.2f, 0.4f, 0.2f), NeonCyan, PrimitiveType.Cylinder);
+
+        // Purple/pink cubes - scattered
+        CreateGroundProp(propsParent.transform, new Vector3(-3f, 0.3f, 4.5f), new Vector3(0.5f, 0.5f, 0.5f), MenuWallPink, PrimitiveType.Cube);
+        CreateGroundProp(propsParent.transform, new Vector3(4f, 0.25f, 3f), new Vector3(0.4f, 0.4f, 0.4f), MenuWallPurple, PrimitiveType.Cube);
+
+        // Golden stacked rings/discs - right side (material showcase)
+        CreateGoldenRings(propsParent.transform, new Vector3(-2f, 0f, 2.5f));
+
+        // Large dark sphere with ring (like a sci-fi orb) - center-right
+        CreateSciOrb(propsParent.transform, new Vector3(3f, 1f, 5f));
+        CreateSciOrb(propsParent.transform, new Vector3(-1f, 0.8f, 6f));
+
+        // Crystal clusters - right side
+        CreateCrystal(propsParent.transform, new Vector3(5f, 0f, 4f), ItemPurpleGlow, 0.6f);
+        CreateCrystal(propsParent.transform, new Vector3(5.5f, 0f, 3.5f), new Color(0.4f, 0.8f, 1f), 0.4f);
+
+        // Small floating cubes (above scene, subtle)
+        CreateFloatingDecor(propsParent.transform, new Vector3(-1f, 6f, 7f), GoldTitle, PrimitiveType.Cube, 0.3f);
+        CreateFloatingDecor(propsParent.transform, new Vector3(2f, 7f, 9f), NeonCyan, PrimitiveType.Cube, 0.25f);
+        CreateFloatingDecor(propsParent.transform, new Vector3(4f, 5.5f, 6f), MenuWallPurple, PrimitiveType.Cube, 0.2f);
+        CreateFloatingDecor(propsParent.transform, new Vector3(-3f, 6.5f, 8f), WallOrange, PrimitiveType.Cube, 0.2f);
 
         // --- AudioManager ---
         GameObject amObj = new GameObject("AudioManager");
@@ -180,6 +275,144 @@ public class MazeRunnerSceneSetup : EditorWindow
                   "Build Settings updated: MainMenuScene=0, TestScene=1.");
     }
 
+    static void CreateMenuWall(Transform parent, Vector3 position, Vector3 scale, Color color)
+    {
+        GameObject wall = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        wall.name = "Menu Wall";
+        wall.transform.SetParent(parent);
+        wall.transform.position = position;
+        wall.transform.localScale = scale;
+        wall.isStatic = true;
+        Object.DestroyImmediate(wall.GetComponent<Collider>());
+        wall.GetComponent<Renderer>().material = CreateMat(color, 0.4f);
+    }
+
+    static void CreateNeonLine(Transform parent, Vector3 localPos, Vector3 scale, Color color)
+    {
+        GameObject line = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        line.name = "Neon Line";
+        line.transform.SetParent(parent);
+        line.transform.localPosition = localPos;
+        line.transform.localScale = scale;
+        Object.DestroyImmediate(line.GetComponent<Collider>());
+
+        var mat = CreateMat(color, 0.9f);
+        mat.SetColor("_EmissionColor", color * 3f);
+        mat.EnableKeyword("_EMISSION");
+        line.GetComponent<Renderer>().material = mat;
+    }
+
+    static void CreateGroundProp(Transform parent, Vector3 position, Vector3 scale, Color color, PrimitiveType shape)
+    {
+        GameObject obj = GameObject.CreatePrimitive(shape);
+        obj.name = "Prop";
+        obj.transform.SetParent(parent);
+        obj.transform.position = position;
+        obj.transform.localScale = scale;
+        Object.DestroyImmediate(obj.GetComponent<Collider>());
+        obj.GetComponent<Renderer>().material = CreateMat(color, 0.5f);
+    }
+
+    static void CreateGoldenRings(Transform parent, Vector3 basePos)
+    {
+        // Stacked golden disc/ring tower (like concept art)
+        Color[] ringColors = {
+            new Color(0.85f, 0.65f, 0.2f),
+            new Color(0.7f, 0.5f, 0.8f),
+            new Color(0.9f, 0.75f, 0.3f),
+            NeonCyan,
+            new Color(0.95f, 0.8f, 0.35f)
+        };
+        for (int i = 0; i < 5; i++)
+        {
+            GameObject ring = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            ring.name = $"Ring {i}";
+            ring.transform.SetParent(parent);
+            ring.transform.position = basePos + new Vector3(0f, 0.15f + i * 0.3f, 0f);
+            float s = 0.7f - i * 0.08f;
+            ring.transform.localScale = new Vector3(s, 0.12f, s);
+            Object.DestroyImmediate(ring.GetComponent<Collider>());
+
+            var mat = CreateMat(ringColors[i], 0.7f);
+            if (i == 3 || i == 4)
+            {
+                mat.SetColor("_EmissionColor", ringColors[i] * 0.5f);
+                mat.EnableKeyword("_EMISSION");
+            }
+            ring.GetComponent<Renderer>().material = mat;
+        }
+        // Glowing sphere on top
+        GameObject topSphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        topSphere.name = "Ring Top";
+        topSphere.transform.SetParent(parent);
+        topSphere.transform.position = basePos + new Vector3(0f, 1.7f, 0f);
+        topSphere.transform.localScale = Vector3.one * 0.25f;
+        Object.DestroyImmediate(topSphere.GetComponent<Collider>());
+        var topMat = CreateMat(NeonCyan, 0.9f);
+        topMat.SetColor("_EmissionColor", NeonCyan * 2f);
+        topMat.EnableKeyword("_EMISSION");
+        topSphere.GetComponent<Renderer>().material = topMat;
+    }
+
+    static void CreateSciOrb(Transform parent, Vector3 position)
+    {
+        // Large dark metallic sphere with a golden ring around it
+        GameObject orb = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        orb.name = "Sci-Fi Orb";
+        orb.transform.SetParent(parent);
+        orb.transform.position = position;
+        orb.transform.localScale = Vector3.one * 1.4f;
+        Object.DestroyImmediate(orb.GetComponent<Collider>());
+        orb.GetComponent<Renderer>().material = CreateMat(new Color(0.25f, 0.25f, 0.28f), 0.8f);
+
+        // Ring around orb
+        GameObject ring = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        ring.name = "Orb Ring";
+        ring.transform.SetParent(orb.transform);
+        ring.transform.localPosition = Vector3.zero;
+        ring.transform.localScale = new Vector3(1.3f, 0.05f, 1.3f);
+        ring.transform.localRotation = Quaternion.Euler(0f, 0f, 20f);
+        Object.DestroyImmediate(ring.GetComponent<Collider>());
+        ring.GetComponent<Renderer>().material = CreateMat(new Color(0.8f, 0.65f, 0.2f), 0.7f);
+
+        // Circular detail
+        GameObject detail = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        detail.name = "Orb Detail";
+        detail.transform.SetParent(orb.transform);
+        detail.transform.localPosition = new Vector3(0f, 0f, 0.45f);
+        detail.transform.localScale = new Vector3(0.5f, 0.02f, 0.5f);
+        detail.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+        Object.DestroyImmediate(detail.GetComponent<Collider>());
+        detail.GetComponent<Renderer>().material = CreateMat(new Color(0.6f, 0.5f, 0.3f), 0.6f);
+    }
+
+    static void CreateCrystal(Transform parent, Vector3 position, Color color, float size)
+    {
+        // Crystal = tall thin cube rotated to look like a shard
+        GameObject crystal = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        crystal.name = "Crystal";
+        crystal.transform.SetParent(parent);
+        crystal.transform.position = position + new Vector3(0f, size * 0.8f, 0f);
+        crystal.transform.localScale = new Vector3(size * 0.3f, size * 1.5f, size * 0.3f);
+        crystal.transform.rotation = Quaternion.Euler(0f, 30f, 8f);
+        Object.DestroyImmediate(crystal.GetComponent<Collider>());
+
+        var mat = CreateMat(color, 0.9f);
+        mat.SetColor("_EmissionColor", color * 1.5f);
+        mat.EnableKeyword("_EMISSION");
+        crystal.GetComponent<Renderer>().material = mat;
+
+        // Second shard
+        GameObject shard2 = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        shard2.name = "Crystal Shard";
+        shard2.transform.SetParent(crystal.transform);
+        shard2.transform.localPosition = new Vector3(0.8f, -0.2f, 0.3f);
+        shard2.transform.localScale = new Vector3(0.7f, 0.6f, 0.7f);
+        shard2.transform.localRotation = Quaternion.Euler(5f, 20f, -10f);
+        Object.DestroyImmediate(shard2.GetComponent<Collider>());
+        shard2.GetComponent<Renderer>().material = mat;
+    }
+
     static void CreateFloatingDecor(Transform parent, Vector3 position, Color color, PrimitiveType shape, float size)
     {
         GameObject obj = GameObject.CreatePrimitive(shape);
@@ -187,7 +420,6 @@ public class MazeRunnerSceneSetup : EditorWindow
         obj.transform.SetParent(parent);
         obj.transform.position = position;
         obj.transform.localScale = Vector3.one * size;
-        // Slight random rotation for variety
         obj.transform.rotation = Quaternion.Euler(15f, position.x * 30f, 10f);
         Object.DestroyImmediate(obj.GetComponent<Collider>());
 
@@ -196,7 +428,6 @@ public class MazeRunnerSceneSetup : EditorWindow
         mat.EnableKeyword("_EMISSION");
         obj.GetComponent<Renderer>().material = mat;
 
-        // Glow light
         GameObject lightObj = new GameObject("Glow");
         lightObj.transform.SetParent(obj.transform);
         lightObj.transform.localPosition = Vector3.zero;
@@ -269,56 +500,72 @@ public class MazeRunnerSceneSetup : EditorWindow
         // --- Main Menu Panel ---
         GameObject menuPanel = CreatePanel(canvasObj.transform, "MenuPanel");
 
-        // Title
-        GameObject titleObj = CreateUIText(menuPanel.transform, "TitleText", "MAZE RUNNER",
-            48, new Color(1f, 0.82f, 0.2f), new Vector2(0f, 200f), new Vector2(600f, 80f));
-        var titleText = titleObj.GetComponent<Text>();
-        titleText.fontStyle = FontStyle.Bold;
+        // Title line 1: "GALAXY"
+        GameObject title1Obj = CreateTMPText(menuPanel.transform, "TitleText1", "GALAXY",
+            72, GoldTitle, new Vector2(0f, 240f), new Vector2(700f, 85f));
+        var title1TMP = title1Obj.GetComponent<TextMeshProUGUI>();
+        title1TMP.fontStyle = FontStyles.Bold;
+        title1TMP.characterSpacing = 12f;
+
+        // Title line 2: "RUNNERS"
+        GameObject title2Obj = CreateTMPText(menuPanel.transform, "TitleText2", "RUNNERS",
+            72, GoldTitle, new Vector2(0f, 165f), new Vector2(700f, 85f));
+        var title2TMP = title2Obj.GetComponent<TextMeshProUGUI>();
+        title2TMP.fontStyle = FontStyles.Bold;
+        title2TMP.characterSpacing = 12f;
 
         // Subtitle
-        CreateUIText(menuPanel.transform, "SubtitleText", "Grab. Run. Score!",
-            22, Color.white, new Vector2(0f, 150f), new Vector2(400f, 40f));
+        CreateTMPText(menuPanel.transform, "SubtitleText", "Alien Artifact, Ancient Cannon, Energy Core",
+            18, new Color(0.9f, 0.85f, 0.7f), new Vector2(0f, 115f), new Vector2(600f, 30f));
 
-        // Buttons
-        float buttonY = 50f;
-        float buttonSpacing = 65f;
+        // Button panel with VerticalLayoutGroup
+        GameObject buttonPanel = new GameObject("ButtonPanel");
+        buttonPanel.transform.SetParent(menuPanel.transform, false);
+        var btnPanelRect = buttonPanel.AddComponent<RectTransform>();
+        btnPanelRect.anchoredPosition = new Vector2(0f, -10f);
+        btnPanelRect.sizeDelta = new Vector2(320f, 260f);
+        var vlg = buttonPanel.AddComponent<VerticalLayoutGroup>();
+        vlg.spacing = 8f;
+        vlg.childAlignment = TextAnchor.MiddleCenter;
+        vlg.childControlWidth = true;
+        vlg.childControlHeight = true;
+        vlg.childForceExpandWidth = true;
+        vlg.childForceExpandHeight = false;
 
-        GameObject singleBtn = CreateMenuButton(menuPanel.transform, "SinglePlayerButton", "Single Player",
-            new Vector2(0f, buttonY), true);
-
-        buttonY -= buttonSpacing;
-        GameObject multiBtn = CreateMenuButton(menuPanel.transform, "MultiplayerButton", "Multiplayer  (Coming Soon)",
-            new Vector2(0f, buttonY), false);
-
-        buttonY -= buttonSpacing;
-        GameObject settingsBtn = CreateMenuButton(menuPanel.transform, "SettingsButton", "Settings",
-            new Vector2(0f, buttonY), true);
-
-        buttonY -= buttonSpacing;
-        GameObject quitBtn = CreateMenuButton(menuPanel.transform, "QuitButton", "Quit",
-            new Vector2(0f, buttonY), true);
+        // Buttons (warm tan/beige style matching concept art)
+        GameObject singleBtn = CreateWarmButton(buttonPanel.transform, "SinglePlayerButton", "Single Player", true);
+        GameObject multiBtn = CreateWarmButton(buttonPanel.transform, "MultiplayerButton", "Multiplayer (COMING SOON)", false);
+        GameObject settingsBtn = CreateWarmButton(buttonPanel.transform, "SettingsButton", "Settings", true);
+        GameObject quitBtn = CreateWarmButton(buttonPanel.transform, "QuitButton", "Quit", true);
 
         // --- Settings Panel (hidden by default) ---
         GameObject settingsPanel = CreatePanel(canvasObj.transform, "SettingsPanel");
         var settingsPanelImg = settingsPanel.GetComponent<Image>();
-        settingsPanelImg.color = new Color(0f, 0f, 0f, 0.85f);
+        settingsPanelImg.color = new Color(0.1f, 0.08f, 0.15f, 0.92f);
 
         // Settings title
-        CreateUIText(settingsPanel.transform, "SettingsTitle", "Settings",
-            36, new Color(1f, 0.82f, 0.2f), new Vector2(0f, 120f), new Vector2(400f, 60f));
+        CreateTMPText(settingsPanel.transform, "SettingsTitle", "Settings",
+            42, GoldTitle, new Vector2(0f, 150f), new Vector2(400f, 60f));
 
-        // Music Volume label
-        CreateUIText(settingsPanel.transform, "MusicLabel", "Music Volume",
-            22, Color.white, new Vector2(0f, 50f), new Vector2(300f, 40f));
+        // Music Volume
+        CreateTMPText(settingsPanel.transform, "MusicLabel", "Music Volume",
+            22, new Color(0.9f, 0.85f, 0.7f), new Vector2(0f, 70f), new Vector2(300f, 35f));
+        GameObject musicSliderObj = CreateWarmSlider(settingsPanel.transform, "MusicSlider",
+            new Vector2(0f, 30f), new Vector2(300f, 30f));
+        var musicSlider = musicSliderObj.GetComponent<Slider>();
 
-        // Music Volume slider
-        GameObject sliderObj = CreateSlider(settingsPanel.transform, "MusicSlider",
-            new Vector2(0f, 0f), new Vector2(300f, 30f));
-        var slider = sliderObj.GetComponent<Slider>();
+        // SFX Volume
+        CreateTMPText(settingsPanel.transform, "SFXLabel", "SFX Volume",
+            22, new Color(0.9f, 0.85f, 0.7f), new Vector2(0f, -20f), new Vector2(300f, 35f));
+        GameObject sfxSliderObj = CreateWarmSlider(settingsPanel.transform, "SFXSlider",
+            new Vector2(0f, -60f), new Vector2(300f, 30f));
+        var sfxSlider = sfxSliderObj.GetComponent<Slider>();
 
         // Close settings button
-        GameObject closeBtn = CreateMenuButton(settingsPanel.transform, "CloseSettingsButton", "Back",
-            new Vector2(0f, -80f), true);
+        GameObject closeBtn = CreateWarmButton(settingsPanel.transform, "CloseSettingsButton", "Back", true);
+        var closeBtnRect = closeBtn.GetComponent<RectTransform>();
+        closeBtnRect.anchoredPosition = new Vector2(0f, -130f);
+        closeBtnRect.sizeDelta = new Vector2(280f, 48f);
 
         settingsPanel.SetActive(false);
 
@@ -326,7 +573,8 @@ public class MazeRunnerSceneSetup : EditorWindow
         var menuUI = canvasObj.AddComponent<MainMenuUI>();
         var soUI = new SerializedObject(menuUI);
         soUI.FindProperty("settingsPanel").objectReferenceValue = settingsPanel;
-        soUI.FindProperty("musicVolumeSlider").objectReferenceValue = slider;
+        soUI.FindProperty("musicVolumeSlider").objectReferenceValue = musicSlider;
+        soUI.FindProperty("sfxVolumeSlider").objectReferenceValue = sfxSlider;
         soUI.FindProperty("gameSceneName").stringValue = "TestScene";
         soUI.ApplyModifiedProperties();
 
@@ -336,6 +584,134 @@ public class MazeRunnerSceneSetup : EditorWindow
         WireButton(settingsBtn, menuUI, "OnSettings");
         WireButton(quitBtn, menuUI, "OnQuit");
         WireButton(closeBtn, menuUI, "OnCloseSettings");
+    }
+
+    static GameObject CreateTMPText(Transform parent, string name, string text,
+        int fontSize, Color color, Vector2 anchoredPos, Vector2 sizeDelta)
+    {
+        GameObject obj = new GameObject(name);
+        obj.transform.SetParent(parent, false);
+        var rect = obj.AddComponent<RectTransform>();
+        rect.anchoredPosition = anchoredPos;
+        rect.sizeDelta = sizeDelta;
+        var tmp = obj.AddComponent<TextMeshProUGUI>();
+        tmp.text = text;
+        tmp.fontSize = fontSize;
+        tmp.color = color;
+        tmp.alignment = TextAlignmentOptions.Center;
+        tmp.enableWordWrapping = false;
+        return obj;
+    }
+
+    static GameObject CreateWarmButton(Transform parent, string name, string label, bool interactable)
+    {
+        // Warm tan/beige button matching concept art style
+        GameObject btnRoot = new GameObject(name);
+        btnRoot.transform.SetParent(parent, false);
+        var rootRect = btnRoot.AddComponent<RectTransform>();
+        rootRect.sizeDelta = new Vector2(280f, 48f);
+
+        var layout = btnRoot.AddComponent<LayoutElement>();
+        layout.preferredHeight = 48f;
+        layout.preferredWidth = 280f;
+
+        // Button background (warm tan fill)
+        var bgImg = btnRoot.AddComponent<Image>();
+        Color bgColor = interactable ? ButtonTan : new Color(0.55f, 0.5f, 0.45f);
+        bgImg.color = bgColor;
+
+        // Label (TMP) - dark text on light background
+        GameObject labelObj = new GameObject("Label");
+        labelObj.transform.SetParent(btnRoot.transform, false);
+        var labelRect = labelObj.AddComponent<RectTransform>();
+        labelRect.anchorMin = Vector2.zero;
+        labelRect.anchorMax = Vector2.one;
+        labelRect.offsetMin = Vector2.zero;
+        labelRect.offsetMax = Vector2.zero;
+        var labelTMP = labelObj.AddComponent<TextMeshProUGUI>();
+        labelTMP.text = label;
+        labelTMP.fontSize = 20;
+        labelTMP.color = interactable ? ButtonTextDark : new Color(0.4f, 0.35f, 0.3f);
+        labelTMP.alignment = TextAlignmentOptions.Center;
+        labelTMP.enableWordWrapping = false;
+
+        // Button component
+        var btn = btnRoot.AddComponent<Button>();
+        btn.interactable = interactable;
+        btn.targetGraphic = bgImg;
+
+        var colors = btn.colors;
+        colors.normalColor = bgColor;
+        colors.highlightedColor = interactable ? new Color(0.88f, 0.78f, 0.6f) : bgColor;
+        colors.pressedColor = interactable ? new Color(0.7f, 0.6f, 0.42f) : bgColor;
+        colors.disabledColor = new Color(0.55f, 0.5f, 0.45f);
+        btn.colors = colors;
+
+        return btnRoot;
+    }
+
+    static GameObject CreateWarmSlider(Transform parent, string name, Vector2 anchoredPos, Vector2 sizeDelta)
+    {
+        GameObject sliderObj = new GameObject(name);
+        sliderObj.transform.SetParent(parent, false);
+        var rect = sliderObj.AddComponent<RectTransform>();
+        rect.anchoredPosition = anchoredPos;
+        rect.sizeDelta = sizeDelta;
+
+        // Background
+        GameObject background = new GameObject("Background");
+        background.transform.SetParent(sliderObj.transform, false);
+        var bgRect = background.AddComponent<RectTransform>();
+        bgRect.anchorMin = Vector2.zero;
+        bgRect.anchorMax = Vector2.one;
+        bgRect.offsetMin = Vector2.zero;
+        bgRect.offsetMax = Vector2.zero;
+        var bgImg = background.AddComponent<Image>();
+        bgImg.color = new Color(0.2f, 0.18f, 0.15f);
+
+        // Fill Area
+        GameObject fillArea = new GameObject("Fill Area");
+        fillArea.transform.SetParent(sliderObj.transform, false);
+        var fillAreaRect = fillArea.AddComponent<RectTransform>();
+        fillAreaRect.anchorMin = Vector2.zero;
+        fillAreaRect.anchorMax = Vector2.one;
+        fillAreaRect.offsetMin = new Vector2(5f, 5f);
+        fillAreaRect.offsetMax = new Vector2(-5f, -5f);
+
+        GameObject fill = new GameObject("Fill");
+        fill.transform.SetParent(fillArea.transform, false);
+        var fillRect = fill.AddComponent<RectTransform>();
+        fillRect.anchorMin = Vector2.zero;
+        fillRect.anchorMax = Vector2.one;
+        fillRect.offsetMin = Vector2.zero;
+        fillRect.offsetMax = Vector2.zero;
+        var fillImg = fill.AddComponent<Image>();
+        fillImg.color = GoldTitle; // Golden fill to match warm theme
+
+        // Handle Slide Area
+        GameObject handleArea = new GameObject("Handle Slide Area");
+        handleArea.transform.SetParent(sliderObj.transform, false);
+        var handleAreaRect = handleArea.AddComponent<RectTransform>();
+        handleAreaRect.anchorMin = Vector2.zero;
+        handleAreaRect.anchorMax = Vector2.one;
+        handleAreaRect.offsetMin = new Vector2(10f, 0f);
+        handleAreaRect.offsetMax = new Vector2(-10f, 0f);
+
+        GameObject handle = new GameObject("Handle");
+        handle.transform.SetParent(handleArea.transform, false);
+        var handleRect = handle.AddComponent<RectTransform>();
+        handleRect.sizeDelta = new Vector2(20f, 0f);
+        var handleImg = handle.AddComponent<Image>();
+        handleImg.color = new Color(0.95f, 0.9f, 0.8f);
+
+        var slider = sliderObj.AddComponent<Slider>();
+        slider.fillRect = fillRect;
+        slider.handleRect = handleRect;
+        slider.minValue = 0f;
+        slider.maxValue = 1f;
+        slider.value = 0.7f;
+
+        return sliderObj;
     }
 
     static GameObject CreatePanel(Transform parent, string name)
@@ -349,7 +725,7 @@ public class MazeRunnerSceneSetup : EditorWindow
         rect.offsetMax = Vector2.zero;
 
         var img = panel.AddComponent<Image>();
-        img.color = new Color(0f, 0f, 0f, 0.0f); // Transparent
+        img.color = new Color(0f, 0f, 0f, 0.0f);
         return panel;
     }
 
@@ -394,7 +770,6 @@ public class MazeRunnerSceneSetup : EditorWindow
         colors.disabledColor = new Color(0.4f, 0.4f, 0.4f);
         btn.colors = colors;
 
-        // Button label
         GameObject textObj = new GameObject("Text");
         textObj.transform.SetParent(btnObj.transform, false);
         var textRect = textObj.AddComponent<RectTransform>();
@@ -420,7 +795,6 @@ public class MazeRunnerSceneSetup : EditorWindow
         rect.anchoredPosition = anchoredPos;
         rect.sizeDelta = sizeDelta;
 
-        // Background
         GameObject background = new GameObject("Background");
         background.transform.SetParent(sliderObj.transform, false);
         var bgRect = background.AddComponent<RectTransform>();
@@ -431,7 +805,6 @@ public class MazeRunnerSceneSetup : EditorWindow
         var bgImg = background.AddComponent<Image>();
         bgImg.color = new Color(0.25f, 0.25f, 0.3f);
 
-        // Fill Area
         GameObject fillArea = new GameObject("Fill Area");
         fillArea.transform.SetParent(sliderObj.transform, false);
         var fillAreaRect = fillArea.AddComponent<RectTransform>();
@@ -450,7 +823,6 @@ public class MazeRunnerSceneSetup : EditorWindow
         var fillImg = fill.AddComponent<Image>();
         fillImg.color = new Color(0.3f, 0.55f, 0.9f);
 
-        // Handle Slide Area
         GameObject handleArea = new GameObject("Handle Slide Area");
         handleArea.transform.SetParent(sliderObj.transform, false);
         var handleAreaRect = handleArea.AddComponent<RectTransform>();
@@ -480,9 +852,6 @@ public class MazeRunnerSceneSetup : EditorWindow
     {
         var btn = buttonObj.GetComponent<Button>();
         if (btn == null) return;
-        var action = new UnityEngine.Events.UnityAction(
-            () => target.SendMessage(methodName));
-        // Use persistent call via SerializedObject for editor wiring
         var so = new SerializedObject(btn);
         var calls = so.FindProperty("m_OnClick.m_PersistentCalls.m_Calls");
         calls.InsertArrayElementAtIndex(calls.arraySize);
@@ -490,7 +859,7 @@ public class MazeRunnerSceneSetup : EditorWindow
         call.FindPropertyRelative("m_Target").objectReferenceValue = target;
         call.FindPropertyRelative("m_MethodName").stringValue = methodName;
         call.FindPropertyRelative("m_Mode").enumValueIndex = 1; // Void
-        call.FindPropertyRelative("m_CallState").enumValueIndex = 2; // RuntimeOnly -> EditorAndRuntime
+        call.FindPropertyRelative("m_CallState").enumValueIndex = 2; // EditorAndRuntime
         so.ApplyModifiedProperties();
     }
 
@@ -546,7 +915,6 @@ public class MazeRunnerSceneSetup : EditorWindow
 
     static void CreateLighting()
     {
-        // Warm cartoon lighting
         var lights = Object.FindObjectsByType<Light>(FindObjectsSortMode.None);
         foreach (var light in lights)
         {
@@ -560,7 +928,6 @@ public class MazeRunnerSceneSetup : EditorWindow
         }
         RenderSettings.ambientIntensity = 1.0f;
 
-        // Fill light for cartoon feel (no harsh shadows)
         GameObject fillLight = new GameObject("Fill Light");
         var fill = fillLight.AddComponent<Light>();
         fill.type = LightType.Directional;
@@ -590,7 +957,6 @@ public class MazeRunnerSceneSetup : EditorWindow
 
     static GameObject CreatePlayer()
     {
-        // --- Body (capsule) ---
         GameObject player = GameObject.CreatePrimitive(PrimitiveType.Capsule);
         player.name = "Player";
         player.transform.position = new Vector3(2f, 1.5f, 2f);
@@ -598,7 +964,6 @@ public class MazeRunnerSceneSetup : EditorWindow
         player.layer = 0;
         player.GetComponent<Renderer>().material = CreateMat(PlayerOrange, 0.5f);
 
-        // Rigidbody
         var rb = player.GetComponent<Rigidbody>();
         if (rb == null) rb = player.AddComponent<Rigidbody>();
         rb.mass = 1f;
@@ -606,7 +971,6 @@ public class MazeRunnerSceneSetup : EditorWindow
         rb.freezeRotation = true;
         rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
 
-        // --- Helmet (sphere on top) ---
         GameObject helmet = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         helmet.name = "Helmet";
         helmet.transform.SetParent(player.transform);
@@ -615,7 +979,6 @@ public class MazeRunnerSceneSetup : EditorWindow
         Object.DestroyImmediate(helmet.GetComponent<Collider>());
         helmet.GetComponent<Renderer>().material = CreateMat(PlayerOrange * 0.85f, 0.6f);
 
-        // --- Visor (dark face screen with LED smile) ---
         GameObject visor = GameObject.CreatePrimitive(PrimitiveType.Cube);
         visor.name = "Visor";
         visor.transform.SetParent(helmet.transform);
@@ -624,11 +987,9 @@ public class MazeRunnerSceneSetup : EditorWindow
         Object.DestroyImmediate(visor.GetComponent<Collider>());
         visor.GetComponent<Renderer>().material = CreateMat(new Color(0.1f, 0.1f, 0.15f), 0.9f);
 
-        // --- LED Eyes on visor ---
         CreateLEDDot(visor.transform, new Vector3(-0.25f, 0.15f, 0.5f), ScreenGreen);
         CreateLEDDot(visor.transform, new Vector3(0.25f, 0.15f, 0.5f), ScreenGreen);
 
-        // --- Helmet light (headlamp) ---
         GameObject headlamp = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         headlamp.name = "Headlamp";
         headlamp.transform.SetParent(helmet.transform);
@@ -637,7 +998,6 @@ public class MazeRunnerSceneSetup : EditorWindow
         Object.DestroyImmediate(headlamp.GetComponent<Collider>());
         headlamp.GetComponent<Renderer>().material = CreateMat(new Color(1f, 1f, 0.7f), 0.9f);
 
-        // Actual light from headlamp
         var lampLight = headlamp.AddComponent<Light>();
         lampLight.type = LightType.Spot;
         lampLight.color = new Color(1f, 1f, 0.85f);
@@ -645,7 +1005,6 @@ public class MazeRunnerSceneSetup : EditorWindow
         lampLight.range = 10f;
         lampLight.spotAngle = 60f;
 
-        // --- Backpack (cube on back) ---
         GameObject backpack = GameObject.CreatePrimitive(PrimitiveType.Cube);
         backpack.name = "Backpack";
         backpack.transform.SetParent(player.transform);
@@ -654,7 +1013,6 @@ public class MazeRunnerSceneSetup : EditorWindow
         Object.DestroyImmediate(backpack.GetComponent<Collider>());
         backpack.GetComponent<Renderer>().material = CreateMat(PlayerOrange * 0.7f, 0.4f);
 
-        // --- Belt (thin cube around waist) ---
         GameObject belt = GameObject.CreatePrimitive(PrimitiveType.Cube);
         belt.name = "Belt";
         belt.transform.SetParent(player.transform);
@@ -663,7 +1021,6 @@ public class MazeRunnerSceneSetup : EditorWindow
         Object.DestroyImmediate(belt.GetComponent<Collider>());
         belt.GetComponent<Renderer>().material = CreateMat(Color.gray, 0.7f);
 
-        // --- Belt buckle ---
         GameObject buckle = GameObject.CreatePrimitive(PrimitiveType.Cube);
         buckle.name = "Buckle";
         buckle.transform.SetParent(belt.transform);
@@ -672,8 +1029,6 @@ public class MazeRunnerSceneSetup : EditorWindow
         Object.DestroyImmediate(buckle.GetComponent<Collider>());
         buckle.GetComponent<Renderer>().material = CreateMat(new Color(0.8f, 0.8f, 0.85f), 0.8f);
 
-        // --- Number "1" indicator (small cube with number) ---
-        // (In real game this would be a text mesh, for now it's a colored dot)
         GameObject numberBadge = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         numberBadge.name = "Player Number";
         numberBadge.transform.SetParent(player.transform);
@@ -682,7 +1037,6 @@ public class MazeRunnerSceneSetup : EditorWindow
         Object.DestroyImmediate(numberBadge.GetComponent<Collider>());
         numberBadge.GetComponent<Renderer>().material = CreateMat(Color.white, 0.5f);
 
-        // === SCRIPTS ===
         var controller = player.AddComponent<PlayerController>();
         player.AddComponent<PlayerInteraction>();
         player.AddComponent<PlayerInventory>();
@@ -699,7 +1053,6 @@ public class MazeRunnerSceneSetup : EditorWindow
         soInteract.FindProperty("interactLayer").intValue = 1 << 7;
         soInteract.ApplyModifiedProperties();
 
-        // Input System
         var playerInput = player.AddComponent<PlayerInput>();
         string[] guids = AssetDatabase.FindAssets("PlayerInputActions t:InputActionAsset");
         if (guids.Length > 0)
@@ -714,7 +1067,6 @@ public class MazeRunnerSceneSetup : EditorWindow
             }
         }
 
-        // Camera
         var cam = Camera.main;
         if (cam != null)
         {
@@ -753,7 +1105,6 @@ public class MazeRunnerSceneSetup : EditorWindow
         Color[] wallColors = { WallBlue, WallYellow, WallRed, WallOrange };
         int colorIdx = 0;
 
-        // Outer walls
         CreateColorWall(wallParent.transform, new Vector3(10f, 1.5f, 0f), new Vector3(20f, 3f, 0.6f),
             "South Wall", wallColors[colorIdx++ % 4]);
         CreateColorWall(wallParent.transform, new Vector3(0f, 1.5f, 10f), new Vector3(0.6f, 3f, 20f),
@@ -763,7 +1114,6 @@ public class MazeRunnerSceneSetup : EditorWindow
         CreateColorWall(wallParent.transform, new Vector3(20f, 1.5f, 10f), new Vector3(0.6f, 3f, 20f),
             "East Wall", wallColors[colorIdx++ % 4]);
 
-        // Inner walls (alternating colors like concept art)
         CreateColorWall(wallParent.transform, new Vector3(8f, 1.5f, 5f), new Vector3(0.6f, 3f, 10f),
             "Inner Wall 1", WallBlue);
         CreateColorWall(wallParent.transform, new Vector3(12f, 1.5f, 12f), new Vector3(8f, 3f, 0.6f),
@@ -777,8 +1127,6 @@ public class MazeRunnerSceneSetup : EditorWindow
         CreateColorWall(wallParent.transform, new Vector3(17f, 1.5f, 15f), new Vector3(0.6f, 3f, 5f),
             "Inner Wall 6", WallYellow);
 
-        // Decorative top trim on walls (rounded top like toy blocks)
-        // Add cylinder caps on some walls for the toy look
         CreateWallCap(wallParent.transform, new Vector3(8f, 3.1f, 2f), WallBlue);
         CreateWallCap(wallParent.transform, new Vector3(8f, 3.1f, 5f), WallBlue);
         CreateWallCap(wallParent.transform, new Vector3(8f, 3.1f, 8f), WallBlue);
@@ -801,7 +1149,6 @@ public class MazeRunnerSceneSetup : EditorWindow
 
     static void CreateWallCap(Transform parent, Vector3 position, Color color)
     {
-        // Rounded bumps on top like building blocks / LEGO studs
         GameObject cap = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
         cap.name = "WallCap";
         cap.transform.SetParent(parent);
@@ -812,13 +1159,12 @@ public class MazeRunnerSceneSetup : EditorWindow
         cap.GetComponent<Renderer>().material = CreateMat(color * 1.1f, 0.5f);
     }
 
-    // ==================== ITEMS (Purple glowing cubes + cyan spheres) ====================
+    // ==================== ITEMS ====================
 
     static void CreateItems()
     {
         GameObject itemParent = new GameObject("Items");
 
-        // Purple glowing cubes (main collectible from concept art)
         CreateCollectibleItem(itemParent.transform, new Vector3(5f, 1f, 5f), "Energy Cube",
             ItemType.Gem, ItemPurpleGlow, 100, PrimitiveType.Cube, 0.55f);
         CreateCollectibleItem(itemParent.transform, new Vector3(15f, 1f, 5f), "Energy Cube",
@@ -826,13 +1172,11 @@ public class MazeRunnerSceneSetup : EditorWindow
         CreateCollectibleItem(itemParent.transform, new Vector3(18f, 1f, 15f), "Energy Cube",
             ItemType.Battery, ItemPurpleGlow, 75, PrimitiveType.Cube, 0.55f);
 
-        // Cyan spheres (from concept art image 4)
         CreateCollectibleItem(itemParent.transform, new Vector3(3f, 1f, 18f), "Data Orb",
             ItemType.Banana, ItemCyan, 50, PrimitiveType.Sphere, 0.4f);
         CreateCollectibleItem(itemParent.transform, new Vector3(10f, 1f, 15f), "Data Orb",
             ItemType.MysteryBox, ItemCyan, 80, PrimitiveType.Sphere, 0.4f);
 
-        // Golden idol (special rare item)
         CreateCollectibleItem(itemParent.transform, new Vector3(17f, 1f, 3f), "Golden Core",
             ItemType.GoldenIdol, new Color(1f, 0.75f, 0.15f), 300, PrimitiveType.Cube, 0.45f);
     }
@@ -848,7 +1192,6 @@ public class MazeRunnerSceneSetup : EditorWindow
         item.tag = "Item";
         item.layer = 7;
 
-        // Glowing material
         var mat = CreateMat(color, 0.85f);
         mat.SetColor("_EmissionColor", color * 1.5f);
         mat.EnableKeyword("_EMISSION");
@@ -858,7 +1201,6 @@ public class MazeRunnerSceneSetup : EditorWindow
         rb2.isKinematic = true;
         rb2.useGravity = false;
 
-        // Glow light
         GameObject lightObj = new GameObject("Glow");
         lightObj.transform.SetParent(item.transform);
         lightObj.transform.localPosition = Vector3.zero;
@@ -876,15 +1218,14 @@ public class MazeRunnerSceneSetup : EditorWindow
         so.ApplyModifiedProperties();
     }
 
-    // ==================== TRAPS (Colorful, toy-like) ====================
+    // ==================== TRAPS ====================
 
     static void CreateTraps()
     {
         GameObject trapParent = new GameObject("Traps");
 
-        // --- Spring Launcher (from concept art - silver coil) ---
+        // Spring Launcher
         {
-            // Base platform
             GameObject trap = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
             trap.name = "Spring Launcher";
             trap.transform.SetParent(trapParent.transform);
@@ -898,7 +1239,6 @@ public class MazeRunnerSceneSetup : EditorWindow
             var triggerCol = trap.AddComponent<CapsuleCollider>();
             triggerCol.isTrigger = true;
 
-            // Spring coil visual (stacked rings)
             for (int i = 0; i < 4; i++)
             {
                 GameObject ring = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
@@ -914,7 +1254,7 @@ public class MazeRunnerSceneSetup : EditorWindow
             trap.AddComponent<LauncherTrap>();
         }
 
-        // --- Push Wall (red danger wall) ---
+        // Push Wall
         {
             GameObject trap = GameObject.CreatePrimitive(PrimitiveType.Cube);
             trap.name = "Push Wall";
@@ -924,7 +1264,6 @@ public class MazeRunnerSceneSetup : EditorWindow
             trap.tag = "Trap";
             trap.GetComponent<Renderer>().material = CreateMat(WallRed, 0.4f);
 
-            // Warning stripes (small yellow bars)
             for (int i = 0; i < 3; i++)
             {
                 GameObject stripe = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -946,7 +1285,7 @@ public class MazeRunnerSceneSetup : EditorWindow
             so.ApplyModifiedProperties();
         }
 
-        // --- Spike Pillars (orange/red from concept art) ---
+        // Spike Pillars
         {
             GameObject spikeZone = new GameObject("Spike Zone");
             spikeZone.transform.SetParent(trapParent.transform);
@@ -963,7 +1302,6 @@ public class MazeRunnerSceneSetup : EditorWindow
                 spike.GetComponent<Renderer>().material = CreateMat(
                     Color.Lerp(WallOrange, WallRed, i / 3f), 0.4f);
 
-                // Pointed top
                 GameObject tip = GameObject.CreatePrimitive(PrimitiveType.Sphere);
                 tip.name = "Tip";
                 tip.transform.SetParent(spike.transform);
@@ -974,7 +1312,7 @@ public class MazeRunnerSceneSetup : EditorWindow
             }
         }
 
-        // --- Slime Zone (green goop) ---
+        // Slime Zone
         {
             GameObject trap = GameObject.CreatePrimitive(PrimitiveType.Cube);
             trap.name = "Slime Zone";
@@ -987,7 +1325,6 @@ public class MazeRunnerSceneSetup : EditorWindow
             if (col != null) col.isTrigger = true;
             trap.AddComponent<SlimeZone>();
 
-            // Slime bubbles
             for (int i = 0; i < 5; i++)
             {
                 GameObject bubble = GameObject.CreatePrimitive(PrimitiveType.Sphere);
@@ -1002,7 +1339,7 @@ public class MazeRunnerSceneSetup : EditorWindow
             }
         }
 
-        // --- Spinner Trap (purple beam) ---
+        // Spinner Trap
         {
             GameObject spinnerBase = new GameObject("Spinner Trap");
             spinnerBase.transform.SetParent(trapParent.transform);
@@ -1037,7 +1374,7 @@ public class MazeRunnerSceneSetup : EditorWindow
             spinnerBase.AddComponent<SpinnerTrap>();
         }
 
-        // --- Conveyor Belt (gray metallic with arrows) ---
+        // Conveyor Belt
         {
             GameObject trap = GameObject.CreatePrimitive(PrimitiveType.Cube);
             trap.name = "Conveyor Belt";
@@ -1046,7 +1383,6 @@ public class MazeRunnerSceneSetup : EditorWindow
             trap.transform.localScale = new Vector3(2f, 0.1f, 6f);
             trap.GetComponent<Renderer>().material = CreateMat(new Color(0.45f, 0.45f, 0.5f), 0.7f);
 
-            // Arrow markings
             for (int i = 0; i < 3; i++)
             {
                 GameObject arrow = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -1065,7 +1401,7 @@ public class MazeRunnerSceneSetup : EditorWindow
         }
     }
 
-    // ==================== DELIVERY MACHINE (Big Mouth from concept art) ====================
+    // ==================== DELIVERY MACHINE ====================
 
     static void CreateDeliveryMachine()
     {
@@ -1073,7 +1409,6 @@ public class MazeRunnerSceneSetup : EditorWindow
         machine.transform.position = new Vector3(2f, 0f, 5f);
         machine.tag = "DeliveryZone";
 
-        // --- Machine body (yellow/blue box) ---
         GameObject body = GameObject.CreatePrimitive(PrimitiveType.Cube);
         body.name = "Machine Body";
         body.transform.SetParent(machine.transform);
@@ -1081,7 +1416,6 @@ public class MazeRunnerSceneSetup : EditorWindow
         body.transform.localScale = new Vector3(2.5f, 3f, 2f);
         body.GetComponent<Renderer>().material = CreateMat(DeliveryYellow, 0.4f);
 
-        // --- Blue top section (head) ---
         GameObject head = GameObject.CreatePrimitive(PrimitiveType.Cube);
         head.name = "Machine Head";
         head.transform.SetParent(machine.transform);
@@ -1090,7 +1424,6 @@ public class MazeRunnerSceneSetup : EditorWindow
         head.GetComponent<Renderer>().material = CreateMat(DeliveryBlue, 0.4f);
         Object.DestroyImmediate(head.GetComponent<Collider>());
 
-        // --- Screen on head (shows TOTAL ASSETS counter) ---
         GameObject screen = GameObject.CreatePrimitive(PrimitiveType.Cube);
         screen.name = "Counter Screen";
         screen.transform.SetParent(head.transform);
@@ -1102,7 +1435,6 @@ public class MazeRunnerSceneSetup : EditorWindow
         screenMat.EnableKeyword("_EMISSION");
         screen.GetComponent<Renderer>().material = screenMat;
 
-        // --- Mouth opening (dark hole with red lips) ---
         GameObject mouth = GameObject.CreatePrimitive(PrimitiveType.Cube);
         mouth.name = "Mouth";
         mouth.transform.SetParent(body.transform);
@@ -1111,15 +1443,12 @@ public class MazeRunnerSceneSetup : EditorWindow
         Object.DestroyImmediate(mouth.GetComponent<Collider>());
         mouth.GetComponent<Renderer>().material = CreateMat(new Color(0.15f, 0.05f, 0.05f), 0.2f);
 
-        // --- Eyes on machine (cute face) ---
         CreateMachineEye(body.transform, new Vector3(-0.2f, 0.25f, 0.51f));
         CreateMachineEye(body.transform, new Vector3(0.2f, 0.25f, 0.51f));
 
-        // --- Side knobs (orange decorations like concept art) ---
         CreateKnob(head.transform, new Vector3(-0.55f, 0f, 0f), WallOrange);
         CreateKnob(head.transform, new Vector3(0.55f, 0f, 0f), WallOrange);
 
-        // --- Antenna on top ---
         GameObject antenna = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
         antenna.name = "Antenna";
         antenna.transform.SetParent(head.transform);
@@ -1136,20 +1465,18 @@ public class MazeRunnerSceneSetup : EditorWindow
         Object.DestroyImmediate(antennaBall.GetComponent<Collider>());
         antennaBall.GetComponent<Renderer>().material = CreateMat(WallRed, 0.5f);
 
-        // --- Trigger zone for delivery ---
         GameObject triggerZone = GameObject.CreatePrimitive(PrimitiveType.Cube);
         triggerZone.name = "Delivery Trigger";
         triggerZone.transform.SetParent(machine.transform);
         triggerZone.transform.localPosition = new Vector3(0f, 1f, 1.5f);
         triggerZone.transform.localScale = new Vector3(3f, 2f, 2f);
-        triggerZone.GetComponent<Renderer>().enabled = false; // Invisible trigger
+        triggerZone.GetComponent<Renderer>().enabled = false;
         var trigCol = triggerZone.GetComponent<Collider>();
         trigCol.isTrigger = true;
         triggerZone.tag = "DeliveryZone";
 
         triggerZone.AddComponent<DeliveryZone>();
 
-        // Light
         GameObject lightObj = new GameObject("Machine Light");
         lightObj.transform.SetParent(machine.transform);
         lightObj.transform.localPosition = new Vector3(0f, 4f, 1f);
@@ -1182,7 +1509,7 @@ public class MazeRunnerSceneSetup : EditorWindow
         knob.GetComponent<Renderer>().material = CreateMat(color, 0.5f);
     }
 
-    // ==================== GATHER ZONE (Portal) ====================
+    // ==================== GATHER ZONE ====================
 
     static void CreateGatherZone()
     {
@@ -1190,7 +1517,6 @@ public class MazeRunnerSceneSetup : EditorWindow
         zone.transform.position = new Vector3(18f, 0f, 18f);
         zone.tag = "GatherZone";
 
-        // Base platform
         GameObject platform = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
         platform.name = "Platform";
         platform.transform.SetParent(zone.transform);
@@ -1203,7 +1529,6 @@ public class MazeRunnerSceneSetup : EditorWindow
         platMat.EnableKeyword("_EMISSION");
         platform.GetComponent<Renderer>().material = platMat;
 
-        // Portal ring
         GameObject ring = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
         ring.name = "Portal Ring";
         ring.transform.SetParent(zone.transform);
@@ -1216,7 +1541,6 @@ public class MazeRunnerSceneSetup : EditorWindow
         ringMat.EnableKeyword("_EMISSION");
         ring.GetComponent<Renderer>().material = ringMat;
 
-        // Inner glow
         GameObject innerGlow = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         innerGlow.name = "Portal Glow";
         innerGlow.transform.SetParent(ring.transform);
@@ -1229,7 +1553,6 @@ public class MazeRunnerSceneSetup : EditorWindow
         glowMat.EnableKeyword("_EMISSION");
         innerGlow.GetComponent<Renderer>().material = glowMat;
 
-        // Light
         GameObject lightObj = new GameObject("Portal Light");
         lightObj.transform.SetParent(zone.transform);
         lightObj.transform.localPosition = new Vector3(0f, 2f, 0f);
@@ -1239,7 +1562,6 @@ public class MazeRunnerSceneSetup : EditorWindow
         light.intensity = 5f;
         light.range = 8f;
 
-        // Trigger collider
         var boxTrigger = zone.AddComponent<BoxCollider>();
         boxTrigger.isTrigger = true;
         boxTrigger.size = new Vector3(3f, 4f, 3f);
