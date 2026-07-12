@@ -1,33 +1,54 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
+using MazeRunner.Core;
 
 namespace MazeRunner.UI
 {
     public class MainMenuUI : MonoBehaviour
     {
-        [SerializeField] private GameObject mainMenuPanel;
-        [SerializeField] private string gameSceneName = "GameScene";
+        [SerializeField] private GameObject settingsPanel;
+        [SerializeField] private Slider musicVolumeSlider;
+        [SerializeField] private string gameSceneName = "TestScene";
 
         void Start()
         {
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
+
+            if (settingsPanel != null)
+                settingsPanel.SetActive(false);
+
+            if (musicVolumeSlider != null)
+            {
+                musicVolumeSlider.value = 0.7f;
+                musicVolumeSlider.onValueChanged.AddListener(OnMusicVolumeChanged);
+            }
+
+            if (AudioManager.Instance != null)
+                AudioManager.Instance.PlayMenuMusic();
         }
 
-        public void OnHostGame()
+        public void OnSinglePlayer()
         {
             SceneManager.LoadScene(gameSceneName);
         }
 
-        public void OnJoinGame()
+        public void OnMultiplayer()
         {
-            // Network join logic will go here (Phase 5)
-            SceneManager.LoadScene(gameSceneName);
+            // Coming Soon - button is non-interactable
         }
 
         public void OnSettings()
         {
-            // Settings panel toggle
+            if (settingsPanel != null)
+                settingsPanel.SetActive(!settingsPanel.activeSelf);
+        }
+
+        public void OnCloseSettings()
+        {
+            if (settingsPanel != null)
+                settingsPanel.SetActive(false);
         }
 
         public void OnQuit()
@@ -37,6 +58,12 @@ namespace MazeRunner.UI
 #else
             Application.Quit();
 #endif
+        }
+
+        private void OnMusicVolumeChanged(float value)
+        {
+            if (AudioManager.Instance != null)
+                AudioManager.Instance.SetMusicVolume(value);
         }
     }
 }
