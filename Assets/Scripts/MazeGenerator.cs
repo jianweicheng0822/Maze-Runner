@@ -149,8 +149,56 @@ public class MazeGenerator : MonoBehaviour
         PlaceSpikes(mazeParent, square);
     }
 
+    HashSet<Vector2Int> FindShortestPath()
+    {
+        var path = new HashSet<Vector2Int>();
+        var visited = new bool[width, height];
+        var parent = new Dictionary<Vector2Int, Vector2Int>();
+        var queue = new Queue<Vector2Int>();
+
+        queue.Enqueue(_entrance);
+        visited[_entrance.x, _entrance.y] = true;
+
+        Vector2Int[] dirs = {
+            new Vector2Int(1, 0), new Vector2Int(-1, 0),
+            new Vector2Int(0, 1), new Vector2Int(0, -1)
+        };
+
+        while (queue.Count > 0)
+        {
+            var current = queue.Dequeue();
+            if (current == _exit)
+            {
+                // Trace back the path
+                var node = _exit;
+                while (node != _entrance)
+                {
+                    path.Add(node);
+                    node = parent[node];
+                }
+                path.Add(_entrance);
+                return path;
+            }
+
+            foreach (var dir in dirs)
+            {
+                int nx = current.x + dir.x;
+                int ny = current.y + dir.y;
+                if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue;
+                if (visited[nx, ny] || _grid[nx, ny] == 0) continue;
+
+                visited[nx, ny] = true;
+                parent[new Vector2Int(nx, ny)] = current;
+                queue.Enqueue(new Vector2Int(nx, ny));
+            }
+        }
+
+        return path;
+    }
+
     void PlaceSpikes(Transform parent, Sprite square)
     {
+        var safePath = FindShortestPath();
         var floorTiles = new List<Vector2Int>();
 
         for (int x = 0; x < width; x++)
@@ -159,9 +207,10 @@ public class MazeGenerator : MonoBehaviour
             {
                 if (_grid[x, y] != 1) continue;
                 Vector2Int pos = new Vector2Int(x, y);
-                // Don't place on entrance or exit
                 if (pos == _entrance || pos == _exit) continue;
-                // Don't place adjacent to entrance (give player safe start)
+                // Don't place on the shortest path
+                if (safePath.Contains(pos)) continue;
+                // Don't place adjacent to entrance
                 if (Mathf.Abs(x - _entrance.x) + Mathf.Abs(y - _entrance.y) <= 2) continue;
                 floorTiles.Add(pos);
             }

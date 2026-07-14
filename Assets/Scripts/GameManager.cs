@@ -61,6 +61,10 @@ public class GameManager : MonoBehaviour
         var health = player.AddComponent<PlayerHealth>();
         health.PlayerDied += HandlePlayerDied;
 
+        // Health bar UI
+        var healthBar = gameObject.AddComponent<HealthBarUI>();
+        healthBar.Setup(health);
+
         // Fog of war
         var fog = GetComponent<FogOfWar>();
         if (fog != null) fog.Setup(player);
