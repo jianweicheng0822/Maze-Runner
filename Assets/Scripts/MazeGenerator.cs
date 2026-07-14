@@ -266,7 +266,8 @@ public class MazeGenerator : MonoBehaviour
 
     void PlaceSpikes(Transform parent, Sprite square, HashSet<Vector2Int> safePath)
     {
-        var floorTiles = new List<Vector2Int>();
+        int minSpacing = 3;
+        var candidates = new List<Vector2Int>();
 
         for (int x = 0; x < width; x++)
         {
@@ -275,25 +276,37 @@ public class MazeGenerator : MonoBehaviour
                 if (_grid[x, y] != 1) continue;
                 Vector2Int pos = new Vector2Int(x, y);
                 if (pos == _entrance || pos == _exit) continue;
-                // Don't place on the shortest path
                 if (safePath.Contains(pos)) continue;
-                // Don't place adjacent to entrance
                 if (Mathf.Abs(x - _entrance.x) + Mathf.Abs(y - _entrance.y) <= 2) continue;
-                floorTiles.Add(pos);
+                candidates.Add(pos);
             }
         }
 
-        // Shuffle and pick
-        int count = Mathf.Min(spikeCount, floorTiles.Count);
-        for (int i = 0; i < count; i++)
+        // Shuffle candidates
+        for (int i = candidates.Count - 1; i > 0; i--)
         {
-            int rand = Random.Range(i, floorTiles.Count);
-            (floorTiles[i], floorTiles[rand]) = (floorTiles[rand], floorTiles[i]);
+            int rand = Random.Range(0, i + 1);
+            (candidates[i], candidates[rand]) = (candidates[rand], candidates[i]);
         }
 
-        for (int i = 0; i < count; i++)
+        // Pick spikes with minimum spacing between each other
+        var placed = new List<Vector2Int>();
+        foreach (var pos in candidates)
         {
-            Vector2Int pos = floorTiles[i];
+            if (placed.Count >= spikeCount) break;
+
+            bool tooClose = false;
+            foreach (var existing in placed)
+            {
+                if (Mathf.Abs(pos.x - existing.x) + Mathf.Abs(pos.y - existing.y) < minSpacing)
+                {
+                    tooClose = true;
+                    break;
+                }
+            }
+            if (tooClose) continue;
+
+            placed.Add(pos);
 
             GameObject spike = new GameObject($"Spike_{pos.x}_{pos.y}");
             spike.transform.parent = parent;
@@ -331,21 +344,21 @@ public class MazeGenerator : MonoBehaviour
                     // Walk in this direction to find corridor length
                     int len = 0;
                     int cx = x, cy = y;
-                    bool onSafePath = false;
+                    bool hasEntranceOrExit = false;
 
                     while (cx > 0 && cx < width - 1 && cy > 0 && cy < height - 1
                            && _grid[cx, cy] == 1)
                     {
                         var pos = new Vector2Int(cx, cy);
-                        if (safePath.Contains(pos) || pos == _entrance || pos == _exit)
-                            onSafePath = true;
+                        if (pos == _entrance || pos == _exit)
+                            hasEntranceOrExit = true;
                         len++;
                         cx += dir.x;
                         cy += dir.y;
                     }
 
-                    // Need at least 3 tiles and not on safe path
-                    if (len >= 3 && !onSafePath)
+                    // Need at least 3 tiles, don't place on entrance/exit
+                    if (len >= 3 && !hasEntranceOrExit)
                     {
                         var start = new Vector2Int(x, y);
                         var end = new Vector2Int(x + dir.x * (len - 1), y + dir.y * (len - 1));

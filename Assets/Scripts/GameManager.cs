@@ -34,6 +34,8 @@ public class GameManager : MonoBehaviour
 
         SpawnPlayer();
         CreateUI();
+
+        gameObject.AddComponent<PauseMenu>();
     }
 
     void SpawnPlayer()
