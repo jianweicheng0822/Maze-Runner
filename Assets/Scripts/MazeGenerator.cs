@@ -9,9 +9,9 @@ public class MazeGenerator : MonoBehaviour
 
     [Header("Traps")]
     public int spikeCount = 5;
-    public int sawCount = 2;
+    public int beamCount = 2;
     public Color spikeColor = new Color(0.9f, 0.2f, 0.2f);
-    public Color sawColor = new Color(0.9f, 0.5f, 0.1f);
+    public Color beamColor = new Color(0.9f, 0.5f, 0.1f);
 
     [Header("Colors")]
     public Color wallColor = new Color(0.25f, 0.25f, 0.3f);
@@ -211,10 +211,19 @@ public class MazeGenerator : MonoBehaviour
 
         exitObj.AddComponent<ExitDoor>();
 
-        // Place traps: saws first, then spikes avoiding saw patrol routes
+        // Exit door emits a faint glow — only visible when nearby
+        var exitLight = exitObj.AddComponent<UnityEngine.Rendering.Universal.Light2D>();
+        exitLight.lightType = UnityEngine.Rendering.Universal.Light2D.LightType.Point;
+        exitLight.pointLightOuterRadius = 1.8f;
+        exitLight.pointLightInnerRadius = 0.3f;
+        exitLight.intensity = 0.4f;
+        exitLight.color = new Color(0.3f, 0.9f, 0.4f); // faint green glow
+        exitLight.falloffIntensity = 0.7f;
+
+        // Place traps: beams first, then spikes avoiding beam areas
         var safePath = FindShortestPath();
-        var sawTiles = PlaceSaws(mazeParent, square, safePath);
-        PlaceSpikes(mazeParent, square, safePath, sawTiles);
+        var beamTiles = PlaceBeams(mazeParent, square, safePath);
+        PlaceSpikes(mazeParent, square, safePath, beamTiles);
     }
 
     HashSet<Vector2Int> FindShortestPath()
@@ -264,7 +273,7 @@ public class MazeGenerator : MonoBehaviour
         return path;
     }
 
-    void PlaceSpikes(Transform parent, Sprite square, HashSet<Vector2Int> safePath, HashSet<Vector2Int> sawTiles)
+    void PlaceSpikes(Transform parent, Sprite square, HashSet<Vector2Int> safePath, HashSet<Vector2Int> beamTiles)
     {
         int minSpacing = 3;
         var candidates = new List<Vector2Int>();
@@ -277,7 +286,7 @@ public class MazeGenerator : MonoBehaviour
                 Vector2Int pos = new Vector2Int(x, y);
                 if (pos == _entrance || pos == _exit) continue;
                 if (safePath.Contains(pos)) continue;
-                if (sawTiles.Contains(pos)) continue;
+                if (beamTiles.Contains(pos)) continue;
                 if (Mathf.Abs(x - _entrance.x) + Mathf.Abs(y - _entrance.y) <= 2) continue;
                 candidates.Add(pos);
             }
@@ -327,89 +336,110 @@ public class MazeGenerator : MonoBehaviour
         }
     }
 
-    HashSet<Vector2Int> PlaceSaws(Transform parent, Sprite square, HashSet<Vector2Int> safePath)
+    HashSet<Vector2Int> PlaceBeams(Transform parent, Sprite square, HashSet<Vector2Int> safePath)
     {
-        var sawTiles = new HashSet<Vector2Int>();
+        var beamTiles = new HashSet<Vector2Int>();
+        int minDistFromEntrance = 5;
+        int minSpacingBetween = 6;
 
-        // Find corridors: floor tiles with a straight line of 5+ floor tiles
-        var corridors = new List<(Vector2Int start, Vector2Int end, List<Vector2Int> tiles)>();
-
-        Vector2Int[] dirs = { new Vector2Int(1, 0), new Vector2Int(0, 1) };
-
-        foreach (var dir in dirs)
+        // Collect candidate floor tiles (not entrance, not exit, not too close to start)
+        var candidates = new List<Vector2Int>();
+        for (int x = 1; x < width - 1; x++)
         {
-            for (int x = 1; x < width - 1; x++)
+            for (int y = 1; y < height - 1; y++)
             {
-                for (int y = 1; y < height - 1; y++)
-                {
-                    if (_grid[x, y] != 1) continue;
-
-                    int len = 0;
-                    int cx = x, cy = y;
-                    bool hasEntranceOrExit = false;
-                    var tiles = new List<Vector2Int>();
-
-                    while (cx > 0 && cx < width - 1 && cy > 0 && cy < height - 1
-                           && _grid[cx, cy] == 1)
-                    {
-                        var pos = new Vector2Int(cx, cy);
-                        if (pos == _entrance || pos == _exit)
-                            hasEntranceOrExit = true;
-                        tiles.Add(pos);
-                        len++;
-                        cx += dir.x;
-                        cy += dir.y;
-                    }
-
-                    // Need at least 5 tiles for player to have time to pass
-                    if (len >= 5 && !hasEntranceOrExit)
-                    {
-                        var start = tiles[0];
-                        var end = tiles[tiles.Count - 1];
-                        corridors.Add((start, end, tiles));
-                    }
-                }
+                if (_grid[x, y] != 1) continue;
+                Vector2Int pos = new Vector2Int(x, y);
+                if (pos == _entrance || pos == _exit) continue;
+                if (Mathf.Abs(x - _entrance.x) + Mathf.Abs(y - _entrance.y) < minDistFromEntrance) continue;
+                candidates.Add(pos);
             }
         }
 
-        // Shuffle and pick
-        for (int i = corridors.Count - 1; i > 0; i--)
+        // Shuffle
+        for (int i = candidates.Count - 1; i > 0; i--)
         {
             int rand = Random.Range(0, i + 1);
-            (corridors[i], corridors[rand]) = (corridors[rand], corridors[i]);
+            (candidates[i], candidates[rand]) = (candidates[rand], candidates[i]);
         }
 
-        int count = Mathf.Min(sawCount, corridors.Count);
-        for (int i = 0; i < count; i++)
+        // Pick with spacing
+        var placed = new List<Vector2Int>();
+        foreach (var pos in candidates)
         {
-            var (start, end, tiles) = corridors[i];
+            if (placed.Count >= beamCount) break;
 
-            // Track all tiles in this saw's patrol route
-            foreach (var t in tiles)
-                sawTiles.Add(t);
+            bool tooClose = false;
+            foreach (var existing in placed)
+            {
+                if (Mathf.Abs(pos.x - existing.x) + Mathf.Abs(pos.y - existing.y) < minSpacingBetween)
+                {
+                    tooClose = true;
+                    break;
+                }
+            }
+            if (tooClose) continue;
 
-            Vector3 worldA = new Vector3(start.x, start.y, 0);
-            Vector3 worldB = new Vector3(end.x, end.y, 0);
+            placed.Add(pos);
+            beamTiles.Add(pos);
 
-            GameObject saw = new GameObject($"Saw_{i}");
-            saw.transform.parent = parent;
-            saw.transform.position = worldA;
-            saw.transform.localScale = Vector3.one * 0.4f;
-
-            var sr = saw.AddComponent<SpriteRenderer>();
-            sr.sprite = square;
-            sr.color = sawColor;
-            sr.sortingOrder = 2;
-
-            var col = saw.AddComponent<CircleCollider2D>();
-            col.isTrigger = true;
-            col.radius = 0.4f;
-
-            var trap = saw.AddComponent<SawTrap>();
-            trap.SetPatrolPoints(worldA, worldB);
+            CreateGlareSpirit(parent, pos);
         }
 
-        return sawTiles;
+        return beamTiles;
+    }
+
+    void CreateGlareSpirit(Transform parent, Vector2Int tile)
+    {
+        float beamLength = 3f;
+        Sprite beamSprite = CreateBeamSprite();
+
+        GameObject spiritObj = new GameObject($"GlareSpirit_{tile.x}_{tile.y}");
+        spiritObj.transform.parent = parent;
+        spiritObj.transform.position = new Vector3(tile.x, tile.y, 0);
+
+        // Kinematic Rigidbody2D for movement and compound collider
+        var rb = spiritObj.AddComponent<Rigidbody2D>();
+        rb.bodyType = RigidbodyType2D.Kinematic;
+
+        // Eye body — glowing circle
+        GameObject eyeObj = new GameObject("EyeBody");
+        eyeObj.transform.SetParent(spiritObj.transform, false);
+        eyeObj.transform.localScale = Vector3.one * 0.35f;
+        var eyeSr = eyeObj.AddComponent<SpriteRenderer>();
+        eyeSr.sprite = CreateCircleSprite();
+        eyeSr.color = new Color(0.35f, 0.3f, 0.25f, 0.9f); // dark, only visible when lit
+        eyeSr.sortingOrder = 3;
+
+        // Eye body trigger — contact with this starts the chase
+        var eyeCol = eyeObj.AddComponent<CircleCollider2D>();
+        eyeCol.isTrigger = true;
+        eyeCol.radius = 1.2f;
+
+        // Pupil — slightly lighter so it contrasts when lit
+        GameObject pupilObj = new GameObject("Pupil");
+        pupilObj.transform.SetParent(eyeObj.transform, false);
+        pupilObj.transform.localScale = Vector3.one * 0.4f;
+        var pupilSr = pupilObj.AddComponent<SpriteRenderer>();
+        pupilSr.sprite = CreateCircleSprite();
+        pupilSr.color = new Color(0.15f, 0.08f, 0.08f);
+        pupilSr.sortingOrder = 4;
+
+        // Beam cone visual — dim, only revealed by player's light
+        GameObject coneObj = new GameObject("BeamCone");
+        coneObj.transform.SetParent(spiritObj.transform, false);
+        coneObj.transform.localPosition = Vector3.zero;
+        coneObj.transform.localScale = new Vector3(0.6f, beamLength, 1f);
+
+        var coneSr = coneObj.AddComponent<SpriteRenderer>();
+        coneSr.sprite = beamSprite;
+        coneSr.color = new Color(0.4f, 0.25f, 0.15f, 0.2f); // nearly invisible in darkness
+        coneSr.sortingOrder = 1;
+
+        // BeamTrap handles movement, rotation, and damage
+        var trap = spiritObj.AddComponent<BeamTrap>();
+        trap.Setup(_grid, width, height, tile);
+        trap.SetPupil(pupilSr);
     }
 
     public bool IsWall(int x, int y)
@@ -427,5 +457,67 @@ public class MazeGenerator : MonoBehaviour
         tex.Apply();
         tex.filterMode = FilterMode.Point;
         return Sprite.Create(tex, new Rect(0, 0, 4, 4), new Vector2(0.5f, 0.5f), 4);
+    }
+
+    Sprite CreateCircleSprite()
+    {
+        int size = 32;
+        Texture2D tex = new Texture2D(size, size);
+        Color[] colors = new Color[size * size];
+        float center = size / 2f;
+        float radius = size / 2f;
+
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                float dist = Vector2.Distance(new Vector2(x, y), new Vector2(center, center));
+                colors[y * size + x] = dist < radius - 1 ? Color.white : Color.clear;
+            }
+        }
+
+        tex.SetPixels(colors);
+        tex.Apply();
+        tex.filterMode = FilterMode.Bilinear;
+        return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), size);
+    }
+
+    Sprite CreateBeamSprite()
+    {
+        int w = 16, h = 64;
+        Texture2D tex = new Texture2D(w, h);
+        Color[] colors = new Color[w * h];
+
+        float centerX = w / 2f;
+
+        for (int y = 0; y < h; y++)
+        {
+            float t = (float)y / h;
+            // Beam widens from narrow base to wider tip
+            float halfWidth = Mathf.Lerp(1f, centerX * 0.8f, t);
+            // Fades toward the tip
+            float alphaY = 1f - t * 0.6f;
+
+            for (int x = 0; x < w; x++)
+            {
+                float distFromCenter = Mathf.Abs(x - centerX);
+                if (distFromCenter <= halfWidth)
+                {
+                    float edgeFade = 1f - (distFromCenter / halfWidth) * 0.6f;
+                    colors[y * w + x] = new Color(1f, 1f, 1f, alphaY * edgeFade);
+                }
+                else
+                {
+                    colors[y * w + x] = Color.clear;
+                }
+            }
+        }
+
+        tex.SetPixels(colors);
+        tex.Apply();
+        tex.filterMode = FilterMode.Bilinear;
+
+        // Pivot at bottom-center so beam extends upward from emitter
+        return Sprite.Create(tex, new Rect(0, 0, w, h), new Vector2(0.5f, 0f), 16);
     }
 }

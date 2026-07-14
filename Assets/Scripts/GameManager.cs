@@ -27,7 +27,7 @@ public class GameManager : MonoBehaviour
         _maze.width = LevelManager.MazeSize;
         _maze.height = LevelManager.MazeSize;
         _maze.spikeCount = LevelManager.SpikeCount;
-        _maze.sawCount = LevelManager.SawCount;
+        _maze.beamCount = LevelManager.BeamCount;
 
         _maze.Generate();
         _maze.BuildVisuals();
@@ -87,6 +87,10 @@ public class GameManager : MonoBehaviour
             fog.Setup(player);
         }
 
+        // Light trail
+        var lightTrail = gameObject.AddComponent<LightTrail>();
+        lightTrail.Setup(player.transform);
+
         // Camera follow
         var camFollow = Camera.main.GetComponent<CameraFollow>();
         if (camFollow != null)
@@ -125,7 +129,7 @@ public class GameManager : MonoBehaviour
 
         // Death text (center, hidden)
         _deathText = CreateText(canvasObj.transform,
-            "YOU DIED\n<size=32>Restarting...</size>",
+            "YOUR LIGHT FADED\n<size=32>Restarting...</size>",
             new Color(0.9f, 0.2f, 0.2f), 64);
         _deathText.gameObject.SetActive(false);
     }

@@ -10,8 +10,8 @@ public static class LevelManager
     // Spikes: 5 base + 2 per level
     public static int SpikeCount => 5 + (CurrentLevel - 1) * 2;
 
-    // Saws: 2 base + 1 per level
-    public static int SawCount => 2 + (CurrentLevel - 1);
+    // Beams (Glare Spirits): 2 base + 1 per level
+    public static int BeamCount => 2 + (CurrentLevel - 1);
 
     // Flashlight range shrinks: 5 base - 0.3 per level, min 2.5
     public static float FlashlightRange => Mathf.Max(5f - (CurrentLevel - 1) * 0.3f, 2.5f);
