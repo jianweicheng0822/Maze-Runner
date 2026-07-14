@@ -5,22 +5,12 @@ public class GameManager : MonoBehaviour
 {
     public static GameManager Instance { get; private set; }
 
-    [Header("Grid Settings")]
-    public int gridWidth = 10;
-    public int gridHeight = 10;
-    public float cellSize = 1f;
-
-    [Header("Colors")]
-    public Color cellColorA = new Color(0.85f, 0.85f, 0.85f);
-    public Color cellColorB = new Color(0.75f, 0.75f, 0.75f);
+    [Header("Player Colors")]
     public Color playerColor = new Color(0.2f, 0.5f, 1f);
-    public Color keyColor = new Color(1f, 0.85f, 0f);
 
-    public Vector2Int KeyPosition { get; private set; }
-
-    bool _won;
+    MazeGenerator _maze;
+    bool _levelComplete;
     TextMeshProUGUI _winText;
-    Canvas _canvas;
 
     void Awake()
     {
@@ -29,148 +19,115 @@ public class GameManager : MonoBehaviour
 
     void Start()
     {
-        CreateGrid();
-        SpawnKey();
+        _maze = GetComponent<MazeGenerator>();
+        _maze.Generate();
+        _maze.BuildVisuals();
+
         SpawnPlayer();
-        SetupCamera();
         CreateWinUI();
-    }
-
-    void CreateGrid()
-    {
-        Sprite square = CreateSquareSprite();
-        Transform gridParent = new GameObject("Grid").transform;
-
-        for (int x = 0; x < gridWidth; x++)
-        {
-            for (int y = 0; y < gridHeight; y++)
-            {
-                GameObject cell = new GameObject($"Cell_{x}_{y}");
-                cell.transform.parent = gridParent;
-                cell.transform.position = GridToWorld(x, y);
-
-                var sr = cell.AddComponent<SpriteRenderer>();
-                sr.sprite = square;
-                sr.color = (x + y) % 2 == 0 ? cellColorA : cellColorB;
-                sr.sortingOrder = 0;
-            }
-        }
     }
 
     void SpawnPlayer()
     {
-        Sprite square = CreateSquareSprite();
+        Vector2Int entrance = _maze.Entrance;
 
         GameObject player = new GameObject("Player");
-        player.transform.position = GridToWorld(0, 0);
+        player.tag = "Player";
+        player.transform.position = new Vector3(entrance.x, entrance.y, 0);
 
+        // Sprite
         var sr = player.AddComponent<SpriteRenderer>();
-        sr.sprite = square;
+        sr.sprite = CreateCircleSprite();
         sr.color = playerColor;
-        sr.sortingOrder = 1;
-        // Make the player slightly smaller than a cell
-        player.transform.localScale = Vector3.one * 0.8f;
+        sr.sortingOrder = 2;
+        player.transform.localScale = Vector3.one * 0.7f;
 
-        player.AddComponent<PlayerController>();
-    }
+        // Physics
+        var rb = player.AddComponent<Rigidbody2D>();
+        rb.gravityScale = 0f;
+        rb.freezeRotation = true;
+        rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
 
-    void SpawnKey()
-    {
-        Sprite square = CreateSquareSprite();
+        // Collider (circle, slightly smaller than sprite)
+        var col = player.AddComponent<CircleCollider2D>();
+        col.radius = 0.4f;
 
-        // Place key away from player start (0,0)
-        int kx, ky;
-        do
+        // Movement script
+        player.AddComponent<PlayerMovement>();
+
+        // Camera follow
+        var camFollow = Camera.main.GetComponent<CameraFollow>();
+        if (camFollow != null)
         {
-            kx = Random.Range(0, gridWidth);
-            ky = Random.Range(0, gridHeight);
-        } while (kx + ky < gridWidth / 2); // Ensure some minimum distance
-
-        KeyPosition = new Vector2Int(kx, ky);
-
-        GameObject key = new GameObject("Key");
-        key.transform.position = GridToWorld(kx, ky);
-        // Rotate 45 degrees to make a diamond shape
-        key.transform.rotation = Quaternion.Euler(0, 0, 45);
-        key.transform.localScale = Vector3.one * 0.5f;
-
-        var sr = key.AddComponent<SpriteRenderer>();
-        sr.sprite = square;
-        sr.color = keyColor;
-        sr.sortingOrder = 1;
-    }
-
-    void SetupCamera()
-    {
-        Camera cam = Camera.main;
-        if (cam == null) return;
-
-        cam.orthographic = true;
-        // Center camera on the grid
-        float centerX = (gridWidth - 1) * cellSize / 2f;
-        float centerY = (gridHeight - 1) * cellSize / 2f;
-        cam.transform.position = new Vector3(centerX, centerY, -10);
-        // Size to fit the grid with some padding
-        cam.orthographicSize = Mathf.Max(gridWidth, gridHeight) * cellSize / 2f + 1f;
+            camFollow.SetTarget(player.transform);
+            // Snap camera to player immediately
+            Camera.main.transform.position = new Vector3(entrance.x, entrance.y, -10);
+        }
     }
 
     void CreateWinUI()
     {
-        // Create canvas
         GameObject canvasObj = new GameObject("WinCanvas");
-        _canvas = canvasObj.AddComponent<Canvas>();
-        _canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        var canvas = canvasObj.AddComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
         canvasObj.AddComponent<UnityEngine.UI.CanvasScaler>();
 
-        // Create win text (hidden)
         GameObject textObj = new GameObject("WinText");
         textObj.transform.SetParent(canvasObj.transform, false);
 
         _winText = textObj.AddComponent<TextMeshProUGUI>();
-        _winText.text = "YOU WIN!";
-        _winText.fontSize = 72;
-        _winText.color = new Color(1f, 0.85f, 0f);
+        _winText.text = "LEVEL COMPLETE!";
+        _winText.fontSize = 64;
+        _winText.color = new Color(0.2f, 0.8f, 0.3f);
         _winText.alignment = TextAlignmentOptions.Center;
         _winText.fontStyle = FontStyles.Bold;
 
         var rect = _winText.rectTransform;
         rect.anchorMin = new Vector2(0.5f, 0.5f);
         rect.anchorMax = new Vector2(0.5f, 0.5f);
-        rect.sizeDelta = new Vector2(600, 150);
+        rect.sizeDelta = new Vector2(700, 150);
 
         textObj.SetActive(false);
     }
 
-    public void OnKeyCollected()
+    public void OnLevelComplete()
     {
-        if (_won) return;
-        _won = true;
+        if (_levelComplete) return;
+        _levelComplete = true;
+
         _winText.gameObject.SetActive(true);
 
-        // Destroy the key object
-        GameObject key = GameObject.Find("Key");
-        if (key != null) Destroy(key);
+        // Freeze player
+        var player = GameObject.FindWithTag("Player");
+        if (player != null)
+        {
+            var rb = player.GetComponent<Rigidbody2D>();
+            if (rb != null) rb.linearVelocity = Vector2.zero;
+            var movement = player.GetComponent<PlayerMovement>();
+            if (movement != null) movement.enabled = false;
+        }
     }
 
-    public bool IsWithinGrid(int x, int y)
+    Sprite CreateCircleSprite()
     {
-        return x >= 0 && x < gridWidth && y >= 0 && y < gridHeight;
-    }
+        int size = 64;
+        Texture2D tex = new Texture2D(size, size);
+        float radius = size / 2f;
+        Color[] colors = new Color[size * size];
 
-    public Vector3 GridToWorld(int x, int y)
-    {
-        return new Vector3(x * cellSize, y * cellSize, 0);
-    }
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                float dist = Vector2.Distance(new Vector2(x, y), new Vector2(radius, radius));
+                colors[y * size + x] = dist < radius - 1 ? Color.white : Color.clear;
+            }
+        }
 
-    Sprite CreateSquareSprite()
-    {
-        Texture2D tex = new Texture2D(4, 4);
-        Color[] colors = new Color[16];
-        for (int i = 0; i < 16; i++) colors[i] = Color.white;
         tex.SetPixels(colors);
         tex.Apply();
-        tex.filterMode = FilterMode.Point;
+        tex.filterMode = FilterMode.Bilinear;
 
-        return Sprite.Create(tex, new Rect(0, 0, 4, 4), new Vector2(0.5f, 0.5f), 4);
+        return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), size);
     }
 }

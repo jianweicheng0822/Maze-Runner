@@ -8,24 +8,25 @@ public static class SceneSetup
     [MenuItem("Maze/Create Game Scene")]
     public static void CreateGameScene()
     {
-        // Create a new empty scene
         Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
-        // Create camera
+        // Camera
         GameObject camObj = new GameObject("Main Camera");
         camObj.tag = "MainCamera";
         var cam = camObj.AddComponent<Camera>();
         cam.orthographic = true;
-        cam.orthographicSize = 6;
+        cam.orthographicSize = 5;
         cam.clearFlags = CameraClearFlags.SolidColor;
-        cam.backgroundColor = new Color(0.15f, 0.15f, 0.2f);
+        cam.backgroundColor = new Color(0.1f, 0.1f, 0.12f);
         camObj.transform.position = new Vector3(0, 0, -10);
+        camObj.AddComponent<CameraFollow>();
 
-        // Create GameManager
+        // GameManager + MazeGenerator
         GameObject gmObj = new GameObject("GameManager");
+        gmObj.AddComponent<MazeGenerator>();
         gmObj.AddComponent<GameManager>();
 
-        // Save the scene
+        // Save
         string path = "Assets/Scenes/GameScene.unity";
         if (!AssetDatabase.IsValidFolder("Assets/Scenes"))
             AssetDatabase.CreateFolder("Assets", "Scenes");
@@ -34,12 +35,12 @@ public static class SceneSetup
 
         // Add to build settings
         var buildScenes = EditorBuildSettings.scenes;
-        bool alreadyAdded = false;
+        bool found = false;
         foreach (var s in buildScenes)
         {
-            if (s.path == path) { alreadyAdded = true; break; }
+            if (s.path == path) { found = true; break; }
         }
-        if (!alreadyAdded)
+        if (!found)
         {
             var newScenes = new EditorBuildSettingsScene[buildScenes.Length + 1];
             buildScenes.CopyTo(newScenes, 0);
@@ -47,6 +48,6 @@ public static class SceneSetup
             EditorBuildSettings.scenes = newScenes;
         }
 
-        Debug.Log("Game scene created at " + path + ". Press Play to start!");
+        Debug.Log("Game scene created. Press Play to start!");
     }
 }
