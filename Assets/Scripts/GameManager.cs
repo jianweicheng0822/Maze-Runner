@@ -13,6 +13,7 @@ public class GameManager : MonoBehaviour
     bool _levelComplete;
     TextMeshProUGUI _winText;
     TextMeshProUGUI _deathText;
+    TextMeshProUGUI _levelText;
 
     void Awake()
     {
@@ -21,7 +22,12 @@ public class GameManager : MonoBehaviour
 
     void Start()
     {
+        // Apply level settings to maze generator
         _maze = GetComponent<MazeGenerator>();
+        _maze.width = LevelManager.MazeSize;
+        _maze.height = LevelManager.MazeSize;
+        _maze.spikeCount = LevelManager.SpikeCount;
+
         _maze.Generate();
         _maze.BuildVisuals();
 
@@ -65,9 +71,13 @@ public class GameManager : MonoBehaviour
         var healthBar = gameObject.AddComponent<HealthBarUI>();
         healthBar.Setup(health);
 
-        // Fog of war
+        // Fog of war with level-scaled values
         var fog = GetComponent<FogOfWar>();
-        if (fog != null) fog.Setup(player);
+        if (fog != null)
+        {
+            fog.SetLevelParams(LevelManager.PointLightRadius, LevelManager.FlashlightRange);
+            fog.Setup(player);
+        }
 
         // Camera follow
         var camFollow = Camera.main.GetComponent<CameraFollow>();
@@ -83,28 +93,43 @@ public class GameManager : MonoBehaviour
         GameObject canvasObj = new GameObject("UICanvas");
         var canvas = canvasObj.AddComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        canvasObj.AddComponent<UnityEngine.UI.CanvasScaler>();
 
-        // Win text
-        _winText = CreateCenterText(canvasObj.transform, "LEVEL COMPLETE!",
-            new Color(0.2f, 0.8f, 0.3f));
+        var scaler = canvasObj.AddComponent<UnityEngine.UI.CanvasScaler>();
+        scaler.uiScaleMode = UnityEngine.UI.CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920, 1080);
+
+        // Level indicator (top right)
+        _levelText = CreateText(canvasObj.transform, $"Level {LevelManager.CurrentLevel}",
+            Color.white, 28);
+        var lvlRect = _levelText.rectTransform;
+        lvlRect.anchorMin = new Vector2(1, 1);
+        lvlRect.anchorMax = new Vector2(1, 1);
+        lvlRect.pivot = new Vector2(1, 1);
+        lvlRect.anchoredPosition = new Vector2(-30, -30);
+        lvlRect.sizeDelta = new Vector2(200, 40);
+        _levelText.alignment = TextAlignmentOptions.Right;
+
+        // Win text (center, hidden)
+        _winText = CreateText(canvasObj.transform,
+            $"LEVEL {LevelManager.CurrentLevel} COMPLETE!\n<size=32>Next level...</size>",
+            new Color(0.2f, 0.8f, 0.3f), 64);
         _winText.gameObject.SetActive(false);
 
-        // Death text
-        _deathText = CreateCenterText(canvasObj.transform, "YOU DIED\n<size=32>Restarting...</size>",
-            new Color(0.9f, 0.2f, 0.2f));
-        _deathText.rectTransform.anchoredPosition = Vector2.zero;
+        // Death text (center, hidden)
+        _deathText = CreateText(canvasObj.transform,
+            "YOU DIED\n<size=32>Restarting...</size>",
+            new Color(0.9f, 0.2f, 0.2f), 64);
         _deathText.gameObject.SetActive(false);
     }
 
-    TextMeshProUGUI CreateCenterText(Transform parent, string text, Color color)
+    TextMeshProUGUI CreateText(Transform parent, string text, Color color, float fontSize)
     {
         GameObject textObj = new GameObject("Text");
         textObj.transform.SetParent(parent, false);
 
         var tmp = textObj.AddComponent<TextMeshProUGUI>();
         tmp.text = text;
-        tmp.fontSize = 64;
+        tmp.fontSize = fontSize;
         tmp.color = color;
         tmp.alignment = TextAlignmentOptions.Center;
         tmp.fontStyle = FontStyles.Bold;
@@ -124,6 +149,14 @@ public class GameManager : MonoBehaviour
 
         _winText.gameObject.SetActive(true);
         FreezePlayer();
+
+        Invoke(nameof(GoToNextLevel), 1.5f);
+    }
+
+    void GoToNextLevel()
+    {
+        LevelManager.NextLevel();
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 
     void HandlePlayerDied()
@@ -133,6 +166,7 @@ public class GameManager : MonoBehaviour
         _deathText.gameObject.SetActive(true);
         FreezePlayer();
 
+        LevelManager.Reset();
         Invoke(nameof(RestartLevel), 1.5f);
     }
 

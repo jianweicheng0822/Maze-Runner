@@ -18,6 +18,12 @@ public class FogOfWar : MonoBehaviour
     Transform _flashlightTransform;
     PlayerMovement _playerMovement;
 
+    public void SetLevelParams(float pointRadius, float flashRange)
+    {
+        pointLightRadius = pointRadius;
+        flashlightRange = flashRange;
+    }
+
     public void Setup(GameObject player)
     {
         _playerMovement = player.GetComponent<PlayerMovement>();
