@@ -211,10 +211,10 @@ public class MazeGenerator : MonoBehaviour
 
         exitObj.AddComponent<ExitDoor>();
 
-        // Place traps
+        // Place traps: saws first, then spikes avoiding saw patrol routes
         var safePath = FindShortestPath();
-        PlaceSpikes(mazeParent, square, safePath);
-        PlaceSaws(mazeParent, square, safePath);
+        var sawTiles = PlaceSaws(mazeParent, square, safePath);
+        PlaceSpikes(mazeParent, square, safePath, sawTiles);
     }
 
     HashSet<Vector2Int> FindShortestPath()
@@ -264,7 +264,7 @@ public class MazeGenerator : MonoBehaviour
         return path;
     }
 
-    void PlaceSpikes(Transform parent, Sprite square, HashSet<Vector2Int> safePath)
+    void PlaceSpikes(Transform parent, Sprite square, HashSet<Vector2Int> safePath, HashSet<Vector2Int> sawTiles)
     {
         int minSpacing = 3;
         var candidates = new List<Vector2Int>();
@@ -277,6 +277,7 @@ public class MazeGenerator : MonoBehaviour
                 Vector2Int pos = new Vector2Int(x, y);
                 if (pos == _entrance || pos == _exit) continue;
                 if (safePath.Contains(pos)) continue;
+                if (sawTiles.Contains(pos)) continue;
                 if (Mathf.Abs(x - _entrance.x) + Mathf.Abs(y - _entrance.y) <= 2) continue;
                 candidates.Add(pos);
             }
@@ -326,10 +327,12 @@ public class MazeGenerator : MonoBehaviour
         }
     }
 
-    void PlaceSaws(Transform parent, Sprite square, HashSet<Vector2Int> safePath)
+    HashSet<Vector2Int> PlaceSaws(Transform parent, Sprite square, HashSet<Vector2Int> safePath)
     {
-        // Find corridors: floor tiles with a straight line of 3+ floor tiles
-        var corridors = new List<(Vector2Int start, Vector2Int end)>();
+        var sawTiles = new HashSet<Vector2Int>();
+
+        // Find corridors: floor tiles with a straight line of 5+ floor tiles
+        var corridors = new List<(Vector2Int start, Vector2Int end, List<Vector2Int> tiles)>();
 
         Vector2Int[] dirs = { new Vector2Int(1, 0), new Vector2Int(0, 1) };
 
@@ -341,10 +344,10 @@ public class MazeGenerator : MonoBehaviour
                 {
                     if (_grid[x, y] != 1) continue;
 
-                    // Walk in this direction to find corridor length
                     int len = 0;
                     int cx = x, cy = y;
                     bool hasEntranceOrExit = false;
+                    var tiles = new List<Vector2Int>();
 
                     while (cx > 0 && cx < width - 1 && cy > 0 && cy < height - 1
                            && _grid[cx, cy] == 1)
@@ -352,17 +355,18 @@ public class MazeGenerator : MonoBehaviour
                         var pos = new Vector2Int(cx, cy);
                         if (pos == _entrance || pos == _exit)
                             hasEntranceOrExit = true;
+                        tiles.Add(pos);
                         len++;
                         cx += dir.x;
                         cy += dir.y;
                     }
 
-                    // Need at least 3 tiles, don't place on entrance/exit
-                    if (len >= 3 && !hasEntranceOrExit)
+                    // Need at least 5 tiles for player to have time to pass
+                    if (len >= 5 && !hasEntranceOrExit)
                     {
-                        var start = new Vector2Int(x, y);
-                        var end = new Vector2Int(x + dir.x * (len - 1), y + dir.y * (len - 1));
-                        corridors.Add((start, end));
+                        var start = tiles[0];
+                        var end = tiles[tiles.Count - 1];
+                        corridors.Add((start, end, tiles));
                     }
                 }
             }
@@ -378,27 +382,34 @@ public class MazeGenerator : MonoBehaviour
         int count = Mathf.Min(sawCount, corridors.Count);
         for (int i = 0; i < count; i++)
         {
-            var (start, end) = corridors[i];
+            var (start, end, tiles) = corridors[i];
+
+            // Track all tiles in this saw's patrol route
+            foreach (var t in tiles)
+                sawTiles.Add(t);
+
             Vector3 worldA = new Vector3(start.x, start.y, 0);
             Vector3 worldB = new Vector3(end.x, end.y, 0);
 
             GameObject saw = new GameObject($"Saw_{i}");
             saw.transform.parent = parent;
             saw.transform.position = worldA;
-            saw.transform.localScale = Vector3.one * 0.5f;
+            saw.transform.localScale = Vector3.one * 0.4f;
 
             var sr = saw.AddComponent<SpriteRenderer>();
             sr.sprite = square;
             sr.color = sawColor;
             sr.sortingOrder = 2;
 
-            var col = saw.AddComponent<BoxCollider2D>();
+            var col = saw.AddComponent<CircleCollider2D>();
             col.isTrigger = true;
-            col.size = Vector2.one * 0.9f;
+            col.radius = 0.4f;
 
             var trap = saw.AddComponent<SawTrap>();
             trap.SetPatrolPoints(worldA, worldB);
         }
+
+        return sawTiles;
     }
 
     public bool IsWall(int x, int y)
