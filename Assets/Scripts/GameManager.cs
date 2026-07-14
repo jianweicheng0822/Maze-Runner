@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using TMPro;
 
 public class GameManager : MonoBehaviour
@@ -11,6 +12,7 @@ public class GameManager : MonoBehaviour
     MazeGenerator _maze;
     bool _levelComplete;
     TextMeshProUGUI _winText;
+    TextMeshProUGUI _deathText;
 
     void Awake()
     {
@@ -24,7 +26,7 @@ public class GameManager : MonoBehaviour
         _maze.BuildVisuals();
 
         SpawnPlayer();
-        CreateWinUI();
+        CreateUI();
     }
 
     void SpawnPlayer()
@@ -48,12 +50,16 @@ public class GameManager : MonoBehaviour
         rb.freezeRotation = true;
         rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
 
-        // Collider (circle, slightly smaller than sprite)
+        // Collider
         var col = player.AddComponent<CircleCollider2D>();
         col.radius = 0.4f;
 
-        // Movement script
+        // Movement
         player.AddComponent<PlayerMovement>();
+
+        // Health
+        var health = player.AddComponent<PlayerHealth>();
+        health.PlayerDied += HandlePlayerDied;
 
         // Fog of war
         var fog = GetComponent<FogOfWar>();
@@ -64,34 +70,47 @@ public class GameManager : MonoBehaviour
         if (camFollow != null)
         {
             camFollow.SetTarget(player.transform);
-            // Snap camera to player immediately
             Camera.main.transform.position = new Vector3(entrance.x, entrance.y, -10);
         }
     }
 
-    void CreateWinUI()
+    void CreateUI()
     {
-        GameObject canvasObj = new GameObject("WinCanvas");
+        GameObject canvasObj = new GameObject("UICanvas");
         var canvas = canvasObj.AddComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
         canvasObj.AddComponent<UnityEngine.UI.CanvasScaler>();
 
-        GameObject textObj = new GameObject("WinText");
-        textObj.transform.SetParent(canvasObj.transform, false);
+        // Win text
+        _winText = CreateCenterText(canvasObj.transform, "LEVEL COMPLETE!",
+            new Color(0.2f, 0.8f, 0.3f));
+        _winText.gameObject.SetActive(false);
 
-        _winText = textObj.AddComponent<TextMeshProUGUI>();
-        _winText.text = "LEVEL COMPLETE!";
-        _winText.fontSize = 64;
-        _winText.color = new Color(0.2f, 0.8f, 0.3f);
-        _winText.alignment = TextAlignmentOptions.Center;
-        _winText.fontStyle = FontStyles.Bold;
+        // Death text
+        _deathText = CreateCenterText(canvasObj.transform, "YOU DIED\n<size=32>Restarting...</size>",
+            new Color(0.9f, 0.2f, 0.2f));
+        _deathText.rectTransform.anchoredPosition = Vector2.zero;
+        _deathText.gameObject.SetActive(false);
+    }
 
-        var rect = _winText.rectTransform;
+    TextMeshProUGUI CreateCenterText(Transform parent, string text, Color color)
+    {
+        GameObject textObj = new GameObject("Text");
+        textObj.transform.SetParent(parent, false);
+
+        var tmp = textObj.AddComponent<TextMeshProUGUI>();
+        tmp.text = text;
+        tmp.fontSize = 64;
+        tmp.color = color;
+        tmp.alignment = TextAlignmentOptions.Center;
+        tmp.fontStyle = FontStyles.Bold;
+
+        var rect = tmp.rectTransform;
         rect.anchorMin = new Vector2(0.5f, 0.5f);
         rect.anchorMax = new Vector2(0.5f, 0.5f);
-        rect.sizeDelta = new Vector2(700, 150);
+        rect.sizeDelta = new Vector2(700, 200);
 
-        textObj.SetActive(false);
+        return tmp;
     }
 
     public void OnLevelComplete()
@@ -100,16 +119,34 @@ public class GameManager : MonoBehaviour
         _levelComplete = true;
 
         _winText.gameObject.SetActive(true);
+        FreezePlayer();
+    }
 
-        // Freeze player
+    void HandlePlayerDied()
+    {
+        if (_levelComplete) return;
+
+        _deathText.gameObject.SetActive(true);
+        FreezePlayer();
+
+        Invoke(nameof(RestartLevel), 1.5f);
+    }
+
+    void RestartLevel()
+    {
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+    }
+
+    void FreezePlayer()
+    {
         var player = GameObject.FindWithTag("Player");
-        if (player != null)
-        {
-            var rb = player.GetComponent<Rigidbody2D>();
-            if (rb != null) rb.linearVelocity = Vector2.zero;
-            var movement = player.GetComponent<PlayerMovement>();
-            if (movement != null) movement.enabled = false;
-        }
+        if (player == null) return;
+
+        var rb = player.GetComponent<Rigidbody2D>();
+        if (rb != null) rb.linearVelocity = Vector2.zero;
+
+        var movement = player.GetComponent<PlayerMovement>();
+        if (movement != null) movement.enabled = false;
     }
 
     Sprite CreateCircleSprite()

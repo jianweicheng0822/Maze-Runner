@@ -7,6 +7,10 @@ public class MazeGenerator : MonoBehaviour
     public int width = 11;
     public int height = 11;
 
+    [Header("Traps")]
+    public int spikeCount = 5;
+    public Color spikeColor = new Color(0.9f, 0.2f, 0.2f);
+
     [Header("Colors")]
     public Color wallColor = new Color(0.25f, 0.25f, 0.3f);
     public Color floorColor = new Color(0.9f, 0.88f, 0.82f);
@@ -140,6 +144,57 @@ public class MazeGenerator : MonoBehaviour
         exitCol.size = Vector2.one * 0.5f;
 
         exitObj.AddComponent<ExitDoor>();
+
+        // Place spike traps on random floor tiles
+        PlaceSpikes(mazeParent, square);
+    }
+
+    void PlaceSpikes(Transform parent, Sprite square)
+    {
+        var floorTiles = new List<Vector2Int>();
+
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                if (_grid[x, y] != 1) continue;
+                Vector2Int pos = new Vector2Int(x, y);
+                // Don't place on entrance or exit
+                if (pos == _entrance || pos == _exit) continue;
+                // Don't place adjacent to entrance (give player safe start)
+                if (Mathf.Abs(x - _entrance.x) + Mathf.Abs(y - _entrance.y) <= 2) continue;
+                floorTiles.Add(pos);
+            }
+        }
+
+        // Shuffle and pick
+        int count = Mathf.Min(spikeCount, floorTiles.Count);
+        for (int i = 0; i < count; i++)
+        {
+            int rand = Random.Range(i, floorTiles.Count);
+            (floorTiles[i], floorTiles[rand]) = (floorTiles[rand], floorTiles[i]);
+        }
+
+        for (int i = 0; i < count; i++)
+        {
+            Vector2Int pos = floorTiles[i];
+
+            GameObject spike = new GameObject($"Spike_{pos.x}_{pos.y}");
+            spike.transform.parent = parent;
+            spike.transform.position = new Vector3(pos.x, pos.y, 0);
+
+            var sr = spike.AddComponent<SpriteRenderer>();
+            sr.sprite = square;
+            sr.color = spikeColor;
+            sr.sortingOrder = 1;
+            spike.transform.localScale = Vector3.one * 0.6f;
+
+            var col = spike.AddComponent<BoxCollider2D>();
+            col.isTrigger = true;
+            col.size = Vector2.one * 0.8f;
+
+            spike.AddComponent<SpikeTrap>();
+        }
     }
 
     public bool IsWall(int x, int y)
