@@ -19,6 +19,7 @@ public class MazeGenerator : MonoBehaviour
     public Color exitColor = new Color(0.2f, 0.8f, 0.3f);
 
     // 0 = wall, 1 = floor
+    public int[,] Grid => _grid;
     int[,] _grid;
     Vector2Int _entrance;
     Vector2Int _exit;

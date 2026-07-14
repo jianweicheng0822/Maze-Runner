@@ -72,6 +72,11 @@ public class GameManager : MonoBehaviour
         var healthBar = gameObject.AddComponent<HealthBarUI>();
         healthBar.Setup(health);
 
+        // Map tracker
+        var mapTracker = gameObject.AddComponent<MapTracker>();
+        mapTracker.Setup(_maze.Grid, _maze.width, _maze.height,
+            _maze.Entrance, _maze.Exit, player.transform);
+
         // Fog of war with level-scaled values
         var fog = GetComponent<FogOfWar>();
         if (fog != null)
