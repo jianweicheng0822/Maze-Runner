@@ -11,7 +11,7 @@ public class BeamTrap : MonoBehaviour
     [Header("Chase")]
     [SerializeField] float drainRate = 8f;         // HP/light drained per second when close
     [SerializeField] float drainRange = 1.2f;       // distance within which draining occurs
-    [SerializeField] float giveUpDistance = 8f;      // distance to stop chasing
+    [SerializeField] float maxChaseDuration = 6f;   // seconds before giving up
     [SerializeField] float pathRecalcInterval = 0.4f;
 
     [Header("Patrol")]
@@ -40,18 +40,23 @@ public class BeamTrap : MonoBehaviour
 
     // Chase pathfinding
     float _nextPathCalcTime;
+    float _chaseStartTime;
     List<Vector2Int> _chasePath = new List<Vector2Int>();
     int _chasePathIndex;
+
+    // Safe alcoves — spirits won't enter these tiles
+    HashSet<Vector2Int> _safeTiles;
 
     static readonly Vector2Int[] CardinalDirs = {
         Vector2Int.up, Vector2Int.down, Vector2Int.left, Vector2Int.right
     };
 
-    public void Setup(int[,] grid, int gridWidth, int gridHeight, Vector2Int startTile)
+    public void Setup(int[,] grid, int gridWidth, int gridHeight, Vector2Int startTile, HashSet<Vector2Int> safeTiles)
     {
         _grid = grid;
         _gridWidth = gridWidth;
         _gridHeight = gridHeight;
+        _safeTiles = safeTiles ?? new HashSet<Vector2Int>();
         _currentTile = startTile;
         _targetTile = startTile;
 
@@ -160,6 +165,7 @@ public class BeamTrap : MonoBehaviour
     void EnterChase()
     {
         _state = State.Chase;
+        _chaseStartTime = Time.time;
         _nextPathCalcTime = 0f;
         _chasePath.Clear();
     }
@@ -172,15 +178,26 @@ public class BeamTrap : MonoBehaviour
             return;
         }
 
-        // Give up if player is too far
-        float distToPlayer = Vector2.Distance(transform.position, _player.position);
-        if (distToPlayer > giveUpDistance)
+        // Give up after max chase duration
+        if (Time.time - _chaseStartTime > maxChaseDuration)
+        {
+            ExitChase();
+            return;
+        }
+
+        // Give up if player is in a safe alcove
+        Vector2Int playerTile = new Vector2Int(
+            Mathf.RoundToInt(_player.position.x),
+            Mathf.RoundToInt(_player.position.y)
+        );
+        if (_safeTiles != null && _safeTiles.Contains(playerTile))
         {
             ExitChase();
             return;
         }
 
         // Drain light/HP when close
+        float distToPlayer = Vector2.Distance(transform.position, _player.position);
         if (distToPlayer < drainRange)
         {
             _playerHealth.TakeDamage(Mathf.RoundToInt(drainRate * Time.fixedDeltaTime));
@@ -283,6 +300,9 @@ public class BeamTrap : MonoBehaviour
                 int ny = current.y + dir.y;
                 if (nx < 0 || nx >= _gridWidth || ny < 0 || ny >= _gridHeight) continue;
                 if (visited[nx, ny] || _grid[nx, ny] == 0) continue;
+                // Spirits cannot enter safe alcoves
+                var nextPos = new Vector2Int(nx, ny);
+                if (_safeTiles != null && _safeTiles.Contains(nextPos)) continue;
 
                 visited[nx, ny] = true;
                 parent[new Vector2Int(nx, ny)] = current;
@@ -332,8 +352,11 @@ public class BeamTrap : MonoBehaviour
         {
             int nx = tile.x + dir.x;
             int ny = tile.y + dir.y;
-            if (nx >= 0 && nx < _gridWidth && ny >= 0 && ny < _gridHeight && _grid[nx, ny] == 1)
-                result.Add(dir);
+            if (nx < 0 || nx >= _gridWidth || ny < 0 || ny >= _gridHeight) continue;
+            if (_grid[nx, ny] != 1) continue;
+            // Spirits won't patrol into safe alcoves
+            if (_safeTiles != null && _safeTiles.Contains(new Vector2Int(nx, ny))) continue;
+            result.Add(dir);
         }
         return result;
     }

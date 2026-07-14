@@ -13,6 +13,9 @@ public static class LevelManager
     // Beams (Glare Spirits): 2 base + 1 per level
     public static int BeamCount => 2 + (CurrentLevel - 1);
 
+    // Safe alcoves: 4 base + 1 per level (scales with danger)
+    public static int AlcoveCount => 4 + (CurrentLevel - 1);
+
     // Flashlight range shrinks: 5 base - 0.3 per level, min 2.5
     public static float FlashlightRange => Mathf.Max(5f - (CurrentLevel - 1) * 0.3f, 2.5f);
 

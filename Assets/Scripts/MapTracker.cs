@@ -152,6 +152,7 @@ public class MapTracker : MonoBehaviour
         Color unexplored = new Color(0.1f, 0.1f, 0.1f);
         Color wall = new Color(0.3f, 0.3f, 0.35f);
         Color floor = new Color(0.6f, 0.58f, 0.52f);
+        Color alcove = new Color(0.45f, 0.5f, 0.65f); // blue-ish tint on map
         Color playerDot = new Color(0.2f, 0.5f, 1f);
         Color exitDot = new Color(0.2f, 0.8f, 0.3f);
 
@@ -168,6 +169,10 @@ public class MapTracker : MonoBehaviour
                 else if (_grid[x, y] == 0)
                 {
                     c = wall;
+                }
+                else if (_grid[x, y] == 2)
+                {
+                    c = alcove;
                 }
                 else
                 {

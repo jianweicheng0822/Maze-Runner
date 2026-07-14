@@ -13,16 +13,22 @@ public class MazeGenerator : MonoBehaviour
     public Color spikeColor = new Color(0.9f, 0.2f, 0.2f);
     public Color beamColor = new Color(0.9f, 0.5f, 0.1f);
 
+    [Header("Alcoves")]
+    public int alcoveCount = 4;
+    public Color alcoveColor = new Color(0.7f, 0.75f, 0.85f);
+
     [Header("Colors")]
     public Color wallColor = new Color(0.25f, 0.25f, 0.3f);
     public Color floorColor = new Color(0.9f, 0.88f, 0.82f);
     public Color exitColor = new Color(0.2f, 0.8f, 0.3f);
 
-    // 0 = wall, 1 = floor
+    // 0 = wall, 1 = floor, 2 = alcove (safe room)
     public int[,] Grid => _grid;
     int[,] _grid;
     Vector2Int _entrance;
     Vector2Int _exit;
+    HashSet<Vector2Int> _safeTiles = new HashSet<Vector2Int>();
+    public HashSet<Vector2Int> SafeTiles => _safeTiles;
 
     public Vector2Int Entrance => _entrance;
     public Vector2Int Exit => _exit;
@@ -165,6 +171,9 @@ public class MazeGenerator : MonoBehaviour
 
     public void BuildVisuals()
     {
+        // Carve safe alcoves into walls before building visuals
+        CarveAlcoves();
+
         Sprite square = CreateSquareSprite();
         Transform mazeParent = new GameObject("Maze").transform;
 
@@ -186,6 +195,11 @@ public class MazeGenerator : MonoBehaviour
                     sr.color = wallColor;
                     var col = cell.AddComponent<BoxCollider2D>();
                     cell.layer = LayerMask.NameToLayer("Default");
+                }
+                else if (_grid[x, y] == 2)
+                {
+                    // Alcove (safe room) — slightly different tint
+                    sr.color = alcoveColor;
                 }
                 else
                 {
@@ -383,13 +397,13 @@ public class MazeGenerator : MonoBehaviour
             placed.Add(pos);
             beamTiles.Add(pos);
 
-            CreateGlareSpirit(parent, pos);
+            CreateGlareSpirit(parent, pos, _safeTiles);
         }
 
         return beamTiles;
     }
 
-    void CreateGlareSpirit(Transform parent, Vector2Int tile)
+    void CreateGlareSpirit(Transform parent, Vector2Int tile, HashSet<Vector2Int> safeTiles)
     {
         float beamLength = 3f;
         Sprite beamSprite = CreateBeamSprite();
@@ -438,8 +452,76 @@ public class MazeGenerator : MonoBehaviour
 
         // BeamTrap handles movement, rotation, and damage
         var trap = spiritObj.AddComponent<BeamTrap>();
-        trap.Setup(_grid, width, height, tile);
+        trap.Setup(_grid, width, height, tile, safeTiles);
         trap.SetPupil(pupilSr);
+    }
+
+    void CarveAlcoves()
+    {
+        _safeTiles.Clear();
+        int minSpacing = 5;
+
+        // Find wall tiles that are adjacent to exactly one floor tile
+        // Carving these creates a small dead-end alcove
+        var candidates = new List<Vector2Int>();
+
+        for (int x = 1; x < width - 1; x++)
+        {
+            for (int y = 1; y < height - 1; y++)
+            {
+                if (_grid[x, y] != 0) continue; // must be a wall
+
+                // Count adjacent floor tiles
+                int floorNeighbors = 0;
+                Vector2Int[] dirs = {
+                    Vector2Int.up, Vector2Int.down, Vector2Int.left, Vector2Int.right
+                };
+                foreach (var dir in dirs)
+                {
+                    int nx = x + dir.x;
+                    int ny = y + dir.y;
+                    if (nx >= 0 && nx < width && ny >= 0 && ny < height && _grid[nx, ny] == 1)
+                        floorNeighbors++;
+                }
+
+                // Exactly one floor neighbor = safe to carve without breaking maze structure
+                if (floorNeighbors == 1)
+                    candidates.Add(new Vector2Int(x, y));
+            }
+        }
+
+        // Shuffle
+        for (int i = candidates.Count - 1; i > 0; i--)
+        {
+            int rand = Random.Range(0, i + 1);
+            (candidates[i], candidates[rand]) = (candidates[rand], candidates[i]);
+        }
+
+        // Pick with spacing
+        var placed = new List<Vector2Int>();
+        foreach (var pos in candidates)
+        {
+            if (placed.Count >= alcoveCount) break;
+
+            bool tooClose = false;
+            foreach (var existing in placed)
+            {
+                if (Mathf.Abs(pos.x - existing.x) + Mathf.Abs(pos.y - existing.y) < minSpacing)
+                {
+                    tooClose = true;
+                    break;
+                }
+            }
+            if (tooClose) continue;
+
+            // Don't place too close to entrance or exit
+            if (Mathf.Abs(pos.x - _entrance.x) + Mathf.Abs(pos.y - _entrance.y) <= 2) continue;
+            if (Mathf.Abs(pos.x - _exit.x) + Mathf.Abs(pos.y - _exit.y) <= 2) continue;
+
+            placed.Add(pos);
+            _grid[pos.x, pos.y] = 2; // mark as alcove
+            _safeTiles.Add(pos);
+        }
     }
 
     public bool IsWall(int x, int y)

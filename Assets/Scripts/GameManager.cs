@@ -28,6 +28,7 @@ public class GameManager : MonoBehaviour
         _maze.height = LevelManager.MazeSize;
         _maze.spikeCount = LevelManager.SpikeCount;
         _maze.beamCount = LevelManager.BeamCount;
+        _maze.alcoveCount = LevelManager.AlcoveCount;
 
         _maze.Generate();
         _maze.BuildVisuals();
