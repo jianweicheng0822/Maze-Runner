@@ -17,6 +17,7 @@ public class HealthBarUI : MonoBehaviour
         _playerHealth.HealthChanged += UpdateBar;
 
         CreateHealthBar(health.transform);
+        UpdateBar(_playerHealth.CurrentHealth, _playerHealth.MaxHealth);
     }
 
     void OnDestroy()
