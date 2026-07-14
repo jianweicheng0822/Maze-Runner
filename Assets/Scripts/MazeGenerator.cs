@@ -9,7 +9,9 @@ public class MazeGenerator : MonoBehaviour
 
     [Header("Traps")]
     public int spikeCount = 5;
+    public int sawCount = 2;
     public Color spikeColor = new Color(0.9f, 0.2f, 0.2f);
+    public Color sawColor = new Color(0.9f, 0.5f, 0.1f);
 
     [Header("Colors")]
     public Color wallColor = new Color(0.25f, 0.25f, 0.3f);
@@ -208,8 +210,10 @@ public class MazeGenerator : MonoBehaviour
 
         exitObj.AddComponent<ExitDoor>();
 
-        // Place spike traps on random floor tiles
-        PlaceSpikes(mazeParent, square);
+        // Place traps
+        var safePath = FindShortestPath();
+        PlaceSpikes(mazeParent, square, safePath);
+        PlaceSaws(mazeParent, square, safePath);
     }
 
     HashSet<Vector2Int> FindShortestPath()
@@ -259,9 +263,8 @@ public class MazeGenerator : MonoBehaviour
         return path;
     }
 
-    void PlaceSpikes(Transform parent, Sprite square)
+    void PlaceSpikes(Transform parent, Sprite square, HashSet<Vector2Int> safePath)
     {
-        var safePath = FindShortestPath();
         var floorTiles = new List<Vector2Int>();
 
         for (int x = 0; x < width; x++)
@@ -306,6 +309,81 @@ public class MazeGenerator : MonoBehaviour
             col.size = Vector2.one * 0.8f;
 
             spike.AddComponent<SpikeTrap>();
+        }
+    }
+
+    void PlaceSaws(Transform parent, Sprite square, HashSet<Vector2Int> safePath)
+    {
+        // Find corridors: floor tiles with a straight line of 3+ floor tiles
+        var corridors = new List<(Vector2Int start, Vector2Int end)>();
+
+        Vector2Int[] dirs = { new Vector2Int(1, 0), new Vector2Int(0, 1) };
+
+        foreach (var dir in dirs)
+        {
+            for (int x = 1; x < width - 1; x++)
+            {
+                for (int y = 1; y < height - 1; y++)
+                {
+                    if (_grid[x, y] != 1) continue;
+
+                    // Walk in this direction to find corridor length
+                    int len = 0;
+                    int cx = x, cy = y;
+                    bool onSafePath = false;
+
+                    while (cx > 0 && cx < width - 1 && cy > 0 && cy < height - 1
+                           && _grid[cx, cy] == 1)
+                    {
+                        var pos = new Vector2Int(cx, cy);
+                        if (safePath.Contains(pos) || pos == _entrance || pos == _exit)
+                            onSafePath = true;
+                        len++;
+                        cx += dir.x;
+                        cy += dir.y;
+                    }
+
+                    // Need at least 3 tiles and not on safe path
+                    if (len >= 3 && !onSafePath)
+                    {
+                        var start = new Vector2Int(x, y);
+                        var end = new Vector2Int(x + dir.x * (len - 1), y + dir.y * (len - 1));
+                        corridors.Add((start, end));
+                    }
+                }
+            }
+        }
+
+        // Shuffle and pick
+        for (int i = corridors.Count - 1; i > 0; i--)
+        {
+            int rand = Random.Range(0, i + 1);
+            (corridors[i], corridors[rand]) = (corridors[rand], corridors[i]);
+        }
+
+        int count = Mathf.Min(sawCount, corridors.Count);
+        for (int i = 0; i < count; i++)
+        {
+            var (start, end) = corridors[i];
+            Vector3 worldA = new Vector3(start.x, start.y, 0);
+            Vector3 worldB = new Vector3(end.x, end.y, 0);
+
+            GameObject saw = new GameObject($"Saw_{i}");
+            saw.transform.parent = parent;
+            saw.transform.position = worldA;
+            saw.transform.localScale = Vector3.one * 0.5f;
+
+            var sr = saw.AddComponent<SpriteRenderer>();
+            sr.sprite = square;
+            sr.color = sawColor;
+            sr.sortingOrder = 2;
+
+            var col = saw.AddComponent<BoxCollider2D>();
+            col.isTrigger = true;
+            col.size = Vector2.one * 0.9f;
+
+            var trap = saw.AddComponent<SawTrap>();
+            trap.SetPatrolPoints(worldA, worldB);
         }
     }
 
