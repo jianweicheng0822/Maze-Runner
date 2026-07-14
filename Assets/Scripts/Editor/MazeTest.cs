@@ -62,11 +62,30 @@ public static class MazeTest
         // DFS carve (same logic as MazeGenerator)
         CarveMaze(grid, width, height, 1, 1);
 
-        Vector2Int entrance = new Vector2Int(1, height - 2);
-        Vector2Int exit = new Vector2Int(width - 2, 1);
+        // Pick random entrance/exit with max distance (same logic as MazeGenerator)
+        var floorTiles = new List<Vector2Int>();
+        for (int x = 1; x < width - 1; x++)
+            for (int y = 1; y < height - 1; y++)
+                if (grid[x, y] == 1)
+                    floorTiles.Add(new Vector2Int(x, y));
 
-        grid[entrance.x, entrance.y] = 1;
-        grid[exit.x, exit.y] = 1;
+        Vector2Int entrance = floorTiles[0];
+        Vector2Int exit = floorTiles[floorTiles.Count - 1];
+        int bestDist = 0;
+
+        for (int i = 0; i < 50; i++)
+        {
+            var a = floorTiles[Random.Range(0, floorTiles.Count)];
+            var b = floorTiles[Random.Range(0, floorTiles.Count)];
+            if (a == b) continue;
+            int d = BFSDistance(grid, width, height, a, b);
+            if (d > bestDist)
+            {
+                bestDist = d;
+                entrance = a;
+                exit = b;
+            }
+        }
 
         // Test 1: Border should all be walls (except if entrance/exit is on border)
         for (int x = 0; x < width; x++)
@@ -188,5 +207,37 @@ public static class MazeTest
         }
 
         return false;
+    }
+
+    static int BFSDistance(int[,] grid, int width, int height, Vector2Int start, Vector2Int end)
+    {
+        var visited = new bool[width, height];
+        var queue = new Queue<(Vector2Int pos, int dist)>();
+        queue.Enqueue((start, 0));
+        visited[start.x, start.y] = true;
+
+        Vector2Int[] dirs = {
+            new Vector2Int(1, 0), new Vector2Int(-1, 0),
+            new Vector2Int(0, 1), new Vector2Int(0, -1)
+        };
+
+        while (queue.Count > 0)
+        {
+            var (pos, dist) = queue.Dequeue();
+            if (pos == end) return dist;
+
+            foreach (var dir in dirs)
+            {
+                int nx = pos.x + dir.x;
+                int ny = pos.y + dir.y;
+                if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue;
+                if (visited[nx, ny] || grid[nx, ny] == 0) continue;
+
+                visited[nx, ny] = true;
+                queue.Enqueue((new Vector2Int(nx, ny), dist + 1));
+            }
+        }
+
+        return 0;
     }
 }
