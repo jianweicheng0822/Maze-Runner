@@ -21,9 +21,10 @@ public static class SceneSetup
         camObj.transform.position = new Vector3(0, 0, -10);
         camObj.AddComponent<CameraFollow>();
 
-        // GameManager + MazeGenerator
+        // GameManager + MazeGenerator + FogOfWar
         GameObject gmObj = new GameObject("GameManager");
         gmObj.AddComponent<MazeGenerator>();
+        gmObj.AddComponent<FogOfWar>();
         gmObj.AddComponent<GameManager>();
 
         // Save

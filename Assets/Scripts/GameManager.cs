@@ -55,6 +55,10 @@ public class GameManager : MonoBehaviour
         // Movement script
         player.AddComponent<PlayerMovement>();
 
+        // Fog of war
+        var fog = GetComponent<FogOfWar>();
+        if (fog != null) fog.Setup(player);
+
         // Camera follow
         var camFollow = Camera.main.GetComponent<CameraFollow>();
         if (camFollow != null)
