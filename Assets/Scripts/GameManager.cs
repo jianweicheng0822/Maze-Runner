@@ -58,8 +58,7 @@ public class GameManager : MonoBehaviour
 
         // Sprite
         var sr = player.AddComponent<SpriteRenderer>();
-        sr.sprite = CreateCircleSprite();
-        sr.color = playerColor;
+        sr.sprite = LoadTransparentSprite("Sprites/bobo", 128);
         sr.sortingOrder = 2;
         player.transform.localScale = Vector3.one * 0.7f;
 
@@ -227,7 +226,36 @@ public class GameManager : MonoBehaviour
         if (movement != null) movement.enabled = false;
     }
 
-    Sprite CreateCircleSprite()
+    // Load a sprite from a .bytes file in Resources and strip white background
+    Sprite LoadTransparentSprite(string path, float pixelsPerUnit)
+    {
+        // Load as TextAsset (.bytes) for full read/write pixel access
+        var asset = Resources.Load<TextAsset>(path + ".png");
+        if (asset == null)
+        {
+            Debug.LogWarning($"Sprite not found: {path}.png.bytes, using fallback circle");
+            return CreateFallbackCircle();
+        }
+
+        var tex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+        ImageConversion.LoadImage(tex, asset.bytes);
+
+        // Strip white background
+        Color[] pixels = tex.GetPixels();
+        for (int i = 0; i < pixels.Length; i++)
+        {
+            if (pixels[i].r > 0.9f && pixels[i].g > 0.9f && pixels[i].b > 0.9f)
+                pixels[i] = Color.clear;
+        }
+        tex.SetPixels(pixels);
+        tex.Apply();
+        tex.filterMode = FilterMode.Bilinear;
+
+        return Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height),
+            new Vector2(0.5f, 0.5f), pixelsPerUnit);
+    }
+
+    Sprite CreateFallbackCircle()
     {
         int size = 64;
         Texture2D tex = new Texture2D(size, size);
@@ -235,18 +263,15 @@ public class GameManager : MonoBehaviour
         Color[] colors = new Color[size * size];
 
         for (int y = 0; y < size; y++)
-        {
             for (int x = 0; x < size; x++)
             {
                 float dist = Vector2.Distance(new Vector2(x, y), new Vector2(radius, radius));
                 colors[y * size + x] = dist < radius - 1 ? Color.white : Color.clear;
             }
-        }
 
         tex.SetPixels(colors);
         tex.Apply();
         tex.filterMode = FilterMode.Bilinear;
-
         return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), size);
     }
 }

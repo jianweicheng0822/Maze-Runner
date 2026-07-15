@@ -27,8 +27,8 @@ public class AudioManager : MonoBehaviour
     {
         Instance = this;
 
-        _bgmSource = CreateSource("BGM", true, 0.3f);
-        _footstepSource = CreateSource("Footstep", true, 0.5f);
+        _bgmSource = CreateSource("BGM", true, 0.12f);
+        _footstepSource = CreateSource("Footstep", true, 0.75f);
         _spiritAmbientSource = CreateSource("SpiritAmbient", true, 0f);
         _heartbeatSource = CreateSource("Heartbeat", true, 0f);
         _sfxSource = CreateSource("SFX", false, 0.7f);
@@ -125,9 +125,8 @@ public class AudioManager : MonoBehaviour
         if (!_heartbeatSource.isPlaying)
             _heartbeatSource.Play();
 
-        // Volume: silent at 50%, loud at 0%
-        // Maps 0.5 -> 0.0 volume, 0.0 -> 1.0 volume
-        _heartbeatSource.volume = 1f - (hpRatio / 0.5f);
+        // Volume: silent at 50%, max 0.8 at 0%
+        _heartbeatSource.volume = 0.8f * (1f - (hpRatio / 0.5f));
 
         // Pitch: normal above 25%, faster below 25%
         if (hpRatio < 0.25f)
@@ -164,7 +163,7 @@ public class AudioManager : MonoBehaviour
         {
             if (!_spiritAmbientSource.isPlaying)
                 _spiritAmbientSource.Play();
-            _spiritAmbientSource.volume = 1f - (nearestDist / maxRange);
+            _spiritAmbientSource.volume = 0.7f * (1f - (nearestDist / maxRange));
         }
         else
         {
