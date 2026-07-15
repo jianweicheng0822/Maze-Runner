@@ -40,6 +40,10 @@ public class GameManager : MonoBehaviour
         SpawnPlayer();
         CreateUI();
 
+        // Ensure there is an AudioListener in the scene
+        if (FindAnyObjectByType<AudioListener>() == null)
+            Camera.main.gameObject.AddComponent<AudioListener>();
+
         gameObject.AddComponent<PauseMenu>();
         gameObject.AddComponent<AudioManager>();
     }
