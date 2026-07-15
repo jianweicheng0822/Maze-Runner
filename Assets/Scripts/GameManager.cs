@@ -58,9 +58,9 @@ public class GameManager : MonoBehaviour
 
         // Sprite
         var sr = player.AddComponent<SpriteRenderer>();
-        sr.sprite = LoadTransparentSprite("Sprites/bobo", 128);
+        sr.sprite = LoadTransparentSprite("Sprites/bobo", 1024);
         sr.sortingOrder = 2;
-        player.transform.localScale = Vector3.one * 0.7f;
+        player.transform.localScale = Vector3.one * 0.9f;
 
         // Physics
         var rb = player.AddComponent<Rigidbody2D>();

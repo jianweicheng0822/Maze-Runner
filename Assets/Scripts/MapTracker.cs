@@ -35,7 +35,7 @@ public class MapTracker : MonoBehaviour
 
     void Update()
     {
-        if (_player == null) return;
+        if (_player == null || _explored == null) return;
 
         TrackExplored();
 
