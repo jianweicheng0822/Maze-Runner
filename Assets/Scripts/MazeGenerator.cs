@@ -49,6 +49,9 @@ public class MazeGenerator : MonoBehaviour
         // Carve maze using DFS
         CarveMaze(1, 1);
 
+        // Add loops to give alternate routes around spirits
+        AddLoops();
+
         // Pick random entrance and exit with maximum path distance
         PickEntranceAndExit();
     }
@@ -100,6 +103,55 @@ public class MazeGenerator : MonoBehaviour
             {
                 stack.Pop();
             }
+        }
+    }
+
+    void AddLoops()
+    {
+        // Find internal walls that separate two floor cells and randomly remove some
+        // to create alternate routes through the maze.
+        // In the grid, odd coords are cells, even coords between them are walls.
+        var candidates = new List<Vector2Int>();
+
+        for (int x = 1; x < width - 1; x++)
+        {
+            for (int y = 1; y < height - 1; y++)
+            {
+                if (_grid[x, y] != 0) continue; // must be a wall
+
+                // Horizontal wall: even x, odd y — separates cells at (x-1,y) and (x+1,y)
+                if (x % 2 == 0 && y % 2 == 1)
+                {
+                    if (x - 1 >= 0 && x + 1 < width &&
+                        _grid[x - 1, y] == 1 && _grid[x + 1, y] == 1)
+                    {
+                        candidates.Add(new Vector2Int(x, y));
+                    }
+                }
+                // Vertical wall: odd x, even y — separates cells at (x,y-1) and (x,y+1)
+                else if (x % 2 == 1 && y % 2 == 0)
+                {
+                    if (y - 1 >= 0 && y + 1 < height &&
+                        _grid[x, y - 1] == 1 && _grid[x, y + 1] == 1)
+                    {
+                        candidates.Add(new Vector2Int(x, y));
+                    }
+                }
+            }
+        }
+
+        // Shuffle candidates
+        for (int i = candidates.Count - 1; i > 0; i--)
+        {
+            int rand = Random.Range(0, i + 1);
+            (candidates[i], candidates[rand]) = (candidates[rand], candidates[i]);
+        }
+
+        // Remove ~12% of candidate walls
+        int removeCount = Mathf.Max(1, Mathf.RoundToInt(candidates.Count * 0.12f));
+        for (int i = 0; i < removeCount && i < candidates.Count; i++)
+        {
+            _grid[candidates[i].x, candidates[i].y] = 1;
         }
     }
 
@@ -449,6 +501,15 @@ public class MazeGenerator : MonoBehaviour
         coneSr.sprite = beamSprite;
         coneSr.color = new Color(0.4f, 0.25f, 0.15f, 0.2f); // nearly invisible in darkness
         coneSr.sortingOrder = 1;
+
+        // Faint ambient glow so the player can spot the spirit from a few tiles away
+        var spiritLight = spiritObj.AddComponent<UnityEngine.Rendering.Universal.Light2D>();
+        spiritLight.lightType = UnityEngine.Rendering.Universal.Light2D.LightType.Point;
+        spiritLight.pointLightOuterRadius = 1.8f;
+        spiritLight.pointLightInnerRadius = 0.2f;
+        spiritLight.intensity = 0.3f;
+        spiritLight.color = new Color(0.95f, 0.6f, 0.2f); // dim orange/amber
+        spiritLight.falloffIntensity = 0.8f;
 
         // BeamTrap handles movement, rotation, and damage
         var trap = spiritObj.AddComponent<BeamTrap>();
