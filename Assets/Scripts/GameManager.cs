@@ -11,6 +11,7 @@ public class GameManager : MonoBehaviour
 
     MazeGenerator _maze;
     bool _levelComplete;
+    bool _gameOver;
     TextMeshProUGUI _winText;
     TextMeshProUGUI _deathText;
     TextMeshProUGUI _levelText;
@@ -29,6 +30,9 @@ public class GameManager : MonoBehaviour
         _maze.spikeCount = LevelManager.SpikeCount;
         _maze.beamCount = LevelManager.BeamCount;
         _maze.alcoveCount = LevelManager.AlcoveCount;
+        _maze.loopPercent = LevelManager.LoopPercent;
+        _maze.spiritChaseSpeed = LevelManager.ChaseSpeed;
+        _maze.spiritDrainRate = LevelManager.DrainRate;
 
         _maze.Generate();
         _maze.BuildVisuals();
@@ -37,6 +41,7 @@ public class GameManager : MonoBehaviour
         CreateUI();
 
         gameObject.AddComponent<PauseMenu>();
+        gameObject.AddComponent<AudioManager>();
     }
 
     void SpawnPlayer()
@@ -157,13 +162,27 @@ public class GameManager : MonoBehaviour
 
     public void OnLevelComplete()
     {
-        if (_levelComplete) return;
+        if (_gameOver) return;
+        _gameOver = true;
         _levelComplete = true;
 
-        _winText.gameObject.SetActive(true);
-        FreezePlayer();
+        if (AudioManager.Instance != null)
+            AudioManager.Instance.PlayLevelComplete();
 
-        Invoke(nameof(GoToNextLevel), 1.5f);
+        if (LevelManager.CurrentLevel >= LevelManager.MaxLevel)
+        {
+            _winText.text = "YOU ESCAPED THE MAZE!\n<size=32>Congratulations!</size>";
+            _winText.gameObject.SetActive(true);
+            FreezePlayer();
+            LevelManager.Reset();
+            Invoke(nameof(RestartLevel), 3f);
+        }
+        else
+        {
+            _winText.gameObject.SetActive(true);
+            FreezePlayer();
+            Invoke(nameof(GoToNextLevel), 1.5f);
+        }
     }
 
     void GoToNextLevel()
@@ -174,7 +193,11 @@ public class GameManager : MonoBehaviour
 
     void HandlePlayerDied()
     {
-        if (_levelComplete) return;
+        if (_gameOver) return;
+        _gameOver = true;
+
+        if (AudioManager.Instance != null)
+            AudioManager.Instance.PlayDeath();
 
         _deathText.gameObject.SetActive(true);
         FreezePlayer();

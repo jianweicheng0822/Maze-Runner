@@ -9,6 +9,8 @@ public class PauseMenu : MonoBehaviour
     GameObject _panel;
     bool _paused;
 
+    public static bool IsPaused { get; private set; }
+
     void Update()
     {
         var kb = Keyboard.current;
@@ -26,6 +28,7 @@ public class PauseMenu : MonoBehaviour
             CreateUI();
 
         _panel.SetActive(_paused);
+        IsPaused = _paused;
         Time.timeScale = _paused ? 0f : 1f;
     }
 
@@ -151,6 +154,7 @@ public class PauseMenu : MonoBehaviour
 
     void OnDestroy()
     {
+        IsPaused = false;
         Time.timeScale = 1f;
     }
 }

@@ -26,6 +26,9 @@ public class SpikeTrap : MonoBehaviour
         health.TakeDamage(damage);
         _nextDamageTime = Time.time + damageCooldown;
 
+        if (AudioManager.Instance != null)
+            AudioManager.Instance.PlaySpikeHit();
+
         // Knockback: push player away from trap center
         Vector2 knockDir = (other.transform.position - transform.position).normalized;
         if (knockDir == Vector2.zero)

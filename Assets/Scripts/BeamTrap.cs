@@ -41,6 +41,7 @@ public class BeamTrap : MonoBehaviour
     // Chase pathfinding
     float _nextPathCalcTime;
     float _chaseStartTime;
+    float _drainAccumulator;
     List<Vector2Int> _chasePath = new List<Vector2Int>();
     int _chasePathIndex;
 
@@ -71,6 +72,12 @@ public class BeamTrap : MonoBehaviour
     public void SetPupil(SpriteRenderer pupil)
     {
         _pupilSr = pupil;
+    }
+
+    public void SetLevelParams(float newChaseSpeed, float newDrainRate)
+    {
+        chaseSpeed = newChaseSpeed;
+        drainRate = newDrainRate;
     }
 
     void Start()
@@ -167,6 +174,7 @@ public class BeamTrap : MonoBehaviour
         _state = State.Chase;
         _chaseStartTime = Time.time;
         _nextPathCalcTime = 0f;
+        _drainAccumulator = 0f;
         _chasePath.Clear();
     }
 
@@ -200,7 +208,13 @@ public class BeamTrap : MonoBehaviour
         float distToPlayer = Vector2.Distance(transform.position, _player.position);
         if (distToPlayer < drainRange)
         {
-            _playerHealth.TakeDamage(Mathf.RoundToInt(drainRate * Time.fixedDeltaTime));
+            _drainAccumulator += drainRate * Time.fixedDeltaTime;
+            if (_drainAccumulator >= 1f)
+            {
+                int dmg = Mathf.FloorToInt(_drainAccumulator);
+                _drainAccumulator -= dmg;
+                _playerHealth.TakeDamage(dmg);
+            }
         }
 
         // Recalculate path periodically
@@ -263,7 +277,7 @@ public class BeamTrap : MonoBehaviour
         _chasePathIndex = 0;
 
         // Skip first tile if it's our current position
-        if (_chasePath.Count > 0 && _chasePath[0] == _currentTile)
+        if (_chasePath.Count > 1 && _chasePath[0] == _currentTile)
             _chasePathIndex = 1;
     }
 

@@ -13,6 +13,13 @@ public class MazeGenerator : MonoBehaviour
     public Color spikeColor = new Color(0.9f, 0.2f, 0.2f);
     public Color beamColor = new Color(0.9f, 0.5f, 0.1f);
 
+    [Header("Loops")]
+    public float loopPercent = 0.12f;
+
+    [Header("Spirits")]
+    public float spiritChaseSpeed = 2.8f;
+    public float spiritDrainRate = 8f;
+
     [Header("Alcoves")]
     public int alcoveCount = 4;
     public Color alcoveColor = new Color(0.7f, 0.75f, 0.85f);
@@ -147,8 +154,7 @@ public class MazeGenerator : MonoBehaviour
             (candidates[i], candidates[rand]) = (candidates[rand], candidates[i]);
         }
 
-        // Remove ~12% of candidate walls
-        int removeCount = Mathf.Max(1, Mathf.RoundToInt(candidates.Count * 0.12f));
+        int removeCount = Mathf.Max(1, Mathf.RoundToInt(candidates.Count * loopPercent));
         for (int i = 0; i < removeCount && i < candidates.Count; i++)
         {
             _grid[candidates[i].x, candidates[i].y] = 1;
@@ -514,6 +520,7 @@ public class MazeGenerator : MonoBehaviour
         // BeamTrap handles movement, rotation, and damage
         var trap = spiritObj.AddComponent<BeamTrap>();
         trap.Setup(_grid, width, height, tile, safeTiles);
+        trap.SetLevelParams(spiritChaseSpeed, spiritDrainRate);
         trap.SetPupil(pupilSr);
     }
 

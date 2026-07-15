@@ -40,7 +40,7 @@ public class MapTracker : MonoBehaviour
         TrackExplored();
 
         var kb = Keyboard.current;
-        if (kb != null && kb.mKey.wasPressedThisFrame)
+        if (kb != null && kb.mKey.wasPressedThisFrame && !PauseMenu.IsPaused)
             ToggleMap();
     }
 
