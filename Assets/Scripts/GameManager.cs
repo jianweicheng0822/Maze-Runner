@@ -227,7 +227,7 @@ public class GameManager : MonoBehaviour
     }
 
     // Load a sprite from a .bytes file in Resources and strip white background
-    Sprite LoadTransparentSprite(string path, float pixelsPerUnit)
+    public static Sprite LoadTransparentSprite(string path, float pixelsPerUnit)
     {
         // Load as TextAsset (.bytes) for full read/write pixel access
         var asset = Resources.Load<TextAsset>(path + ".png");

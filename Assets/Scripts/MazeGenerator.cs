@@ -474,28 +474,19 @@ public class MazeGenerator : MonoBehaviour
         var rb = spiritObj.AddComponent<Rigidbody2D>();
         rb.bodyType = RigidbodyType2D.Kinematic;
 
-        // Eye body — glowing circle
+        // Eye body — loaded sprite
         GameObject eyeObj = new GameObject("EyeBody");
         eyeObj.transform.SetParent(spiritObj.transform, false);
-        eyeObj.transform.localScale = Vector3.one * 0.35f;
         var eyeSr = eyeObj.AddComponent<SpriteRenderer>();
-        eyeSr.sprite = CreateCircleSprite();
-        eyeSr.color = new Color(0.35f, 0.3f, 0.25f, 0.9f); // dark, only visible when lit
+        eyeSr.sprite = GameManager.LoadTransparentSprite("Sprites/glare_spirit", 1024);
         eyeSr.sortingOrder = 3;
 
         // Eye body trigger — contact with this starts the chase
         var eyeCol = eyeObj.AddComponent<CircleCollider2D>();
         eyeCol.isTrigger = true;
-        eyeCol.radius = 1.2f;
+        eyeCol.radius = 0.4f;
 
-        // Pupil — slightly lighter so it contrasts when lit
-        GameObject pupilObj = new GameObject("Pupil");
-        pupilObj.transform.SetParent(eyeObj.transform, false);
-        pupilObj.transform.localScale = Vector3.one * 0.4f;
-        var pupilSr = pupilObj.AddComponent<SpriteRenderer>();
-        pupilSr.sprite = CreateCircleSprite();
-        pupilSr.color = new Color(0.15f, 0.08f, 0.08f);
-        pupilSr.sortingOrder = 4;
+        // No separate pupil needed — sprite already has one
 
         // Beam cone visual — dim, only revealed by player's light
         GameObject coneObj = new GameObject("BeamCone");
@@ -521,7 +512,7 @@ public class MazeGenerator : MonoBehaviour
         var trap = spiritObj.AddComponent<BeamTrap>();
         trap.Setup(_grid, width, height, tile, safeTiles);
         trap.SetLevelParams(spiritChaseSpeed, spiritDrainRate);
-        trap.SetPupil(pupilSr);
+        trap.SetPupil(null);
     }
 
     void CarveAlcoves()
